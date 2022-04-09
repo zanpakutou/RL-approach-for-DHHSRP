@@ -22,7 +22,7 @@ class Enviroment:
         #Init patient parameter
         self.nb_weeks = 0
         self.day_per_week = 0
-        self.requests = [[[]]]
+        self.requests = []
         
         
     def make(self, patient_dir, context_dir):
@@ -50,7 +50,7 @@ class Enviroment:
                 if "---> Week :" in line:
                     self.nb_weeks = self.nb_weeks + 1
                     self.day_per_week = 0
-                    self.requests.append([[]])
+                    self.requests.append([])
                     continue
                 if "--> Day :" in line:
                     self.day_per_week = self.day_per_week + 1

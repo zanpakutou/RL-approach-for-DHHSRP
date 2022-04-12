@@ -36,8 +36,8 @@ class Route:
         return -1
 class Schedule:
     def __init__(self, env):
-        self.planned_routes = [[[Route(env.nurse_depot, env.working_tw)]\
-                            * env.day_per_week] * env.nb_weeks] * env.nb_nurses #nurses(weeks(days)))
+        self.planned_routes = [[[Route(env.nurse_depot, env.working_tw) for i in range(env.day_per_week)] \
+                                for j in range (env.nb_weeks)] for k in range(env.nb_nurses)] #nurses(weeks(days)))
         self.weeks = []
         self.horizon = env.nb_weeks
         self.work_tw = env.working_tw
@@ -59,7 +59,7 @@ class Schedule:
                     #Out of working window of nurse
                     if (not self.work_tw[0] <= time <= self.work_tw[1]):
                         continue
-                    if (not self.work_tw[0] <= (time + request.require_time[2]*60 - 1) <= self.work_tw[1]):
+                    if (not self.work_tw[0] <= (time + request.require_time[2]*60) <= self.work_tw[1]):
                         continue
                     #Is not start of time slot
                     if (time % 15 != 0):
@@ -82,7 +82,7 @@ class Schedule:
                                     _is_ok = False
                                     continue
                                 #Check valid insertion
-                                cost = self.planned_routes[nurse][week][day].insert(request.location, time, time + request.require_time[2]*60 - 1, checking = True)
+                                cost = self.planned_routes[nurse][week][day].insert(request.location, time, time + request.require_time[2]*60, checking = True)
                                 if (cost < 0):
                                     _is_ok = False
                                 total_cost += cost;
@@ -107,5 +107,5 @@ class Schedule:
         
         for week in range(start_week, start_week + request.require_time[0]):
             for day in pattern:
-                self.planned_routes[nurse][week][day].insert(request.location, time, time + request.require_time[2] * 60 - 1)        
+                self.planned_routes[nurse][week][day].insert(request.location, time, time + request.require_time[2] * 60)        
         return True

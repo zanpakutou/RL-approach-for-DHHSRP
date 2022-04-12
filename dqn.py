@@ -1,8 +1,8 @@
 import random
 import numpy as np
 from collections import deque
-from keras.models import Sequential
-from keras.layers import Dense
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
 
 EPISODES = 1000
@@ -19,7 +19,7 @@ class DQNAgent:
         self.learning_rate = 0.001
         self.model = self._build_model()
 
-    def _build_model(self, _size):
+    def _build_model(self, _size = 16):
         # Neural Net for Deep-Q learning Model
         model = Sequential()
         model.add(Dense(_size, input_dim=self.state_size, activation='relu'))

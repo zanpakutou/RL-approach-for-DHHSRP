@@ -3,7 +3,7 @@ import numpy as np
 
 class PatientGenerator:
     def __init__(self):
-        self.arrival_rate = 10;
+        self.arrival_rate = 20;
         self.max_weeks = 4
         self.max_days = 3
         self.max_hours = 2

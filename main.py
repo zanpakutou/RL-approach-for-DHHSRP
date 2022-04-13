@@ -4,16 +4,41 @@ from feature_engineering import FeatureExtractor
 from dqn import DQNAgent
 import numpy as np
 import utils
+def test_result():
+    env = Enviroment()
+    env.make("instances/test/" + str(99) + ".in", "instances/context.in")
+    sched = Schedule(env)
+    requests = env.get_request()
+    feature_extractor = FeatureExtractor(env, sched)
 
+    ans = 0
+    for week in range(env.nb_weeks):
+        for day in range(env.day_per_week):
+            for request in requests[week][day]:
+                current_time = (week, day, request.current_time)
+                (valid, min_cost_insertion) = sched.check_feasible(request, current_time)
+                if valid == False :
+                        continue
+
+                state = feature_extractor.get_feature(request, current_time)
+                state = np.reshape(state, [1, state_size])
+                action = agent.act(state)
+                if action == 0:
+                    continue
+                else:
+                    sched.accept_request(request, current_time)
+                    ans = ans + 1
+    return ans
+    
 if __name__ == "__main__":
     done = False
     batch_size = 1
-    EPISODES = 1000
+    EPISODES = 1001
     state_size = 9
     action_size = 2
     agent = DQNAgent(state_size, action_size)
     np.random.seed(333)
-    # agent.load("./save/cartpole-dqn.h5")
+    # agent.load("save/dhhsrp-dqn.h5")
 
     
     for e in range(EPISODES):
@@ -64,5 +89,7 @@ if __name__ == "__main__":
         #Update epsilon of greedy
         if agent.epsilon > agent.epsilon_min:
             agent.epsilon *= agent.epsilon_decay
-        if e % 5 == 0:
+        if e % 10 == 0:
             agent.save("save/dhhsrp-dqn.h5")
+        if e % 5 == 0:
+            print("test: {}".format(test_result()))

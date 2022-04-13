@@ -20,6 +20,8 @@ class Route:
         for pos in range(1, len(self.visit)):
             prev = self.visit[pos - 1]
             next_ = self.visit[pos]
+            if (not prev.ed <= start_time) or  (not (end_time <= next_.st)):
+                continue 
             if not (prev.ed + distance(prev.pos, position) <= start_time):
                 continue
             if not (end_time + distance(position, next_.pos) <= next_.st):
@@ -63,7 +65,6 @@ class Schedule:
                     #Is not start of time slot
                     if (time % 15 != 0):
                         continue
-                    
                     #Check for c_p weeks
                     for week in range(start_week, start_week + request.require_time[0]):
                         is_ok = False

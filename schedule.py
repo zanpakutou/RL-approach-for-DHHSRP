@@ -52,7 +52,6 @@ class Schedule:
                 continue
             max_start_week = self.horizon - request.require_time[0]
             for start_week in range(current_time[0], max_start_week + 1):
-            #for start_week in range(0, 1):
                 is_st_week_ok = False
                 for time in range(0, 1440, 15):
                     is_time_ok = True

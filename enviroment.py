@@ -29,7 +29,6 @@ class Enviroment:
         """Read param for patients from 'patient_dir' and
             param for nurses from context_dir
         """
-        print(patient_dir)
         try:
             context_file = open(context_dir, "r")
             patient_file = open(patient_dir, "r")

@@ -12,18 +12,17 @@ if __name__ == "__main__":
     state_size = 9
     action_size = 2
     agent = DQNAgent(state_size, action_size)
-    env = Enviroment()
     np.random.seed(333)
     # agent.load("./save/cartpole-dqn.h5")
 
     
     for e in range(EPISODES):
         no_instance = np.random.randint(75)
+        env = Enviroment()
         env.make("instances/train/" + str(no_instance) + ".in", "instances/context.in")
         sched = Schedule(env)
         requests = env.get_request()
         feature_extractor = FeatureExtractor(env, sched)
-        
         score = 0
         for week in range(env.nb_weeks):
             for day in range(env.day_per_week):
@@ -36,7 +35,6 @@ if __name__ == "__main__":
                     #Derive action
                     action = agent.act(state)
                     #Calculate reward
-                    #TODO : adjust the error reward
                     reward = 0
                     next_state = state
                     if action == 0:
@@ -44,7 +42,7 @@ if __name__ == "__main__":
                     else:
                         (valid, min_cost_insertion) = sched.check_feasible(request, current_time)
                         if valid == False :
-                            reward = -10
+                            reward = -0.5
                         else:
                             sched.accept_request(request, current_time)
                             next_state = feature_extractor.get_feature(request, current_time)
@@ -62,5 +60,5 @@ if __name__ == "__main__":
                         agent.replay(batch_size)
         print("episode: {}/{}, score: {}, e: {:.2}"
                           .format(e, EPISODES, score, agent.epsilon))
-        if e % 10 == 0:
+        if e % 5 == 0:
             agent.save("save/dhhsrp-dqn.h5")

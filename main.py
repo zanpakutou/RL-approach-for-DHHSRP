@@ -17,6 +17,7 @@ if __name__ == "__main__":
 
     
     for e in range(EPISODES):
+        #Init episode by random instance
         no_instance = np.random.randint(75)
         env = Enviroment()
         env.make("instances/train/" + str(no_instance) + ".in", "instances/context.in")
@@ -60,5 +61,8 @@ if __name__ == "__main__":
                         agent.replay(batch_size)
         print("episode: {}/{}, score: {}, e: {:.2}"
                           .format(e, EPISODES, score, agent.epsilon))
+        #Update epsilon of greedy
+        if agent.epsilon > agent.epsilon_min:
+            agent.epsilon *= agent.epsilon_decay
         if e % 5 == 0:
             agent.save("save/dhhsrp-dqn.h5")

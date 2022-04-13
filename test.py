@@ -13,7 +13,7 @@ import utils
 state_size = 9
 action_size = 2
 agent = DQNAgent(state_size, action_size)
-agent.load("save/dhhsrp-dqn-save.h5")
+agent.load("save/dhhsrp-dqn.h5")
 agent.epsilon = 0.0001
 
 
@@ -53,8 +53,7 @@ for no in range(75, 100):
 
                 state = feature_extractor.get_feature(request, current_time)
                 state = np.reshape(state, [1, state_size])
-                #action = agent.act(state)
-                action = 1 - np.random.randint(5)//4
+                action = agent.act(state)
                 if action == 0:
                     continue
                 else:

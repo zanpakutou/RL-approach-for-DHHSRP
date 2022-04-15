@@ -17,7 +17,7 @@ agent.load("save/dhhsrp-dqn.h5")
 agent.epsilon = 0.0001
 
 
-for no in range(75, 100):
+for no in range(99, 100):
     env = Enviroment()
     env.make("instances/test/" + str(no) + ".in", "instances/context.in")
     sched = Schedule(env)
@@ -53,6 +53,7 @@ for no in range(75, 100):
 
                 state = feature_extractor.get_feature(request, current_time)
                 state = np.reshape(state, [1, state_size])
+                #print(state)
                 action = agent.act(state)
                 if action == 0:
                     continue

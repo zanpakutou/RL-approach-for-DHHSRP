@@ -7,7 +7,7 @@ class FeatureExtractor:
         self.env = env
         self.schedule = schedule
     def get_feature(self, request, current_time):
-        decision_point = (self.env.working_tw[1] - self.env.working_tw[0]) * (self.env.day_per_week * current_time[0] + current_time[1])\
+        decision_point = 1440 * (self.env.day_per_week * current_time[0] + current_time[1])\
                         + request.current_time
         #Request information
         require_weeks = request.require_time[0]
@@ -20,8 +20,8 @@ class FeatureExtractor:
         ocupied_rate = 0
         count_nurse = 0
         for nurse in range(0, self.env.nb_nurses):
-            if (self.env.qual[nurse] < request.require_skill):
-                continue
+            #if (self.env.qual[nurse] < request.require_skill):
+            #    continue
             count_nurse = count_nurse + 1
             for week in range(0, self.env.nb_weeks):
                 for day in range(0, self.env.day_per_week):

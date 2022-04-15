@@ -19,7 +19,7 @@ class DQNAgent:
         self.learning_rate = 0.001
         self.model = self._build_model()
 
-    def _build_model(self, _size = 16):
+    def _build_model(self, _size = 32):
         # Neural Net for Deep-Q learning Model
         model = Sequential()
         model.add(Dense(_size, input_dim=self.state_size, activation='relu'))
@@ -36,6 +36,8 @@ class DQNAgent:
         if np.random.rand() <= self.epsilon:
             return random.randrange(self.action_size)
         act_values = self.model.predict(state)
+        if (np.isnan(act_values[0][0])):
+            quit()
         return np.argmax(act_values[0])  # returns action
 
     def replay(self, batch_size):

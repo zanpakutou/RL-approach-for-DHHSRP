@@ -32,8 +32,8 @@ def test_result():
     
 if __name__ == "__main__":
     done = False
-    batch_size = 1
-    EPISODES = 1001
+    batch_size = 4
+    EPISODES = 11
     state_size = 9
     action_size = 2
     agent = DQNAgent(state_size, action_size)
@@ -53,11 +53,14 @@ if __name__ == "__main__":
         for week in range(env.nb_weeks):
             for day in range(env.day_per_week):
                 for request in requests[week][day]:
-                    #Calculate state
                     current_time = (week, day, request.current_time)
-                    #print(current_time)
+                    (valid, min_cost_insertion) = sched.check_feasible(request, current_time)
+                    if valid == False :
+                        continue
+                    #Calculate state
                     state = feature_extractor.get_feature(request, current_time)
                     state = np.reshape(state, [1, state_size])
+                
                     #Derive action
                     action = agent.act(state)
                     #Calculate reward
@@ -66,15 +69,11 @@ if __name__ == "__main__":
                     if action == 0:
                         reward = 0
                     else:
-                        (valid, min_cost_insertion) = sched.check_feasible(request, current_time)
-                        if valid == False :
-                            reward = -0.5
-                        else:
-                            sched.accept_request(request, current_time)
-                            next_state = feature_extractor.get_feature(request, current_time)
-                            next_state = np.reshape(next_state, [1, state_size])
-                            reward = 1
-                            score = score + 1
+                        sched.accept_request(request, current_time)
+                        next_state = feature_extractor.get_feature(request, current_time)
+                        next_state = np.reshape(next_state, [1, state_size])
+                        reward = 1
+                        score = score + 1
                     #Check if end of episode
                     if week == env.nb_weeks - 1 and day == env.day_per_week - 1 and request == requests[week][day][-1]:
                         done = 1

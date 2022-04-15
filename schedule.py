@@ -17,6 +17,8 @@ class Route:
             If checking = True then just return the increasing cost without modify the route
             If the insertion is infeasible, return -1
         """
+        min_cost = 10000000000
+        save_pos = -1
         for pos in range(1, len(self.visit)):
             prev = self.visit[pos - 1]
             next_ = self.visit[pos]
@@ -26,16 +28,16 @@ class Route:
                 continue
             if not (end_time + distance(position, next_.pos) <= next_.st):
                 continue
-            if (pos < len(self.visit) - 1):
-                if checking == False :
-                    self.visit.insert(pos, Visit(position, start_time, end_time))
-                return 0
-            else:
-                if checking == False :
-                    self.visit.insert(pos, Visit(position, start_time, end_time))
-                return end_time - prev.ed
-            
-        return -1
+            insert_cost = distance(prev.pos, position) + distance(position, next_.pos)
+            if (insert_cost < min_cost):
+                save_pos = pos
+                min_cost = insert_cost
+        if save_pos > -1 : 
+            if checking == False :
+                    self.visit.insert(save_pos, Visit(position, start_time, end_time))
+            return min_cost
+        else:
+            return -1
 class Schedule:
     def __init__(self, env):
         self.planned_routes = [[[Route(env.nurse_depot, env.working_tw) for i in range(env.day_per_week)] \

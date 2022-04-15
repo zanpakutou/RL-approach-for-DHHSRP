@@ -31,6 +31,8 @@ class PatientGenerator:
                     while (current_time < 24 * 60):
                         (delay_time, require_time, require_skill, location) = self.generate_patient()
                         current_time += int(delay_time)
+                        if (current_time >= 24 * 60):
+                            break
                         f.write("-> Request " + str(count) + '\n')
                         f.write(str(current_time) +  '\n')
                         f.write(str(require_time) + '\n')

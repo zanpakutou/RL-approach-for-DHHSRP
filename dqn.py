@@ -19,7 +19,7 @@ class DQNAgent:
         self.learning_rate = 0.001
         self.model = self._build_model()
 
-    def _build_model(self, _size = 16):
+    def _build_model(self, _size = 32):
         # Neural Net for Deep-Q learning Model
         model = Sequential()
         model.add(Dense(_size, input_dim=self.state_size, activation='relu'))

@@ -31,6 +31,7 @@ for no in range(75, 100):
             for request in requests[week][day]:
                 current_time = (week, day, request.current_time)
                 (valid, min_cost_insertion) = sched.check_feasible(request, current_time)
+
                 if valid == True :
                     ans = ans + 1
                     sched.accept_request(request, current_time)

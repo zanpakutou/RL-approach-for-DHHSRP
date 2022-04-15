@@ -20,8 +20,8 @@ class FeatureExtractor:
         ocupied_rate = 0
         count_nurse = 0
         for nurse in range(0, self.env.nb_nurses):
-            if (self.env.qual[nurse] < request.require_skill):
-                continue
+            #if (self.env.qual[nurse] < request.require_skill):
+            #    continue
             count_nurse = count_nurse + 1
             for week in range(0, self.env.nb_weeks):
                 for day in range(0, self.env.day_per_week):

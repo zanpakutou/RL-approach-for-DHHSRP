@@ -1,4 +1,4 @@
-from enviroment import Enviroment
+from enviroment import Enviroment, Request
 from schedule import Schedule
 from feature_engineering import FeatureExtractor
 from dqn import DQNAgent
@@ -32,11 +32,12 @@ def test_result():
     
 if __name__ == "__main__":
     done = False
-    batch_size = 4
-    EPISODES = 11
+    batch_size = 2
+    EPISODES = 1001
     state_size = 9
     action_size = 2
     agent = DQNAgent(state_size, action_size)
+    null_request  = Request(current_time = 0, require_time = (5, 5, 5), require_skill = 0, location = (40, 40))
     np.random.seed(333)
     # agent.load("save/dhhsrp-dqn.h5")
 
@@ -60,25 +61,28 @@ if __name__ == "__main__":
                     #Calculate state
                     state = feature_extractor.get_feature(request, current_time)
                     state = np.reshape(state, [1, state_size])
-                
+                    
                     #Derive action
                     action = agent.act(state)
                     #Calculate reward
                     reward = 0
                     next_state = state
+                    
                     if action == 0:
                         reward = 0
                     else:
                         sched.accept_request(request, current_time)
-                        next_state = feature_extractor.get_feature(request, current_time)
-                        next_state = np.reshape(next_state, [1, state_size])
                         reward = 1
                         score = score + 1
+                    null_request.current_time = request.current_time
+                    next_state = feature_extractor.get_feature(null_request, current_time)
+                    next_state = np.reshape(next_state, [1, state_size])  
                     #Check if end of episode
                     if week == env.nb_weeks - 1 and day == env.day_per_week - 1 and request == requests[week][day][-1]:
                         done = 1
                     else:
                         done = 0
+                    done = 1
                     agent.memorize(state, action, reward, next_state, done)                    
                     
                     if len(agent.memory) > batch_size:
@@ -86,9 +90,9 @@ if __name__ == "__main__":
         print("episode: {}/{}, score: {}, e: {:.2}"
                           .format(e, EPISODES, score, agent.epsilon))
         #Update epsilon of greedy
-        if agent.epsilon > agent.epsilon_min:
-            agent.epsilon *= agent.epsilon_decay
-        if e % 10 == 0:
-            agent.save("save/dhhsrp-dqn.h5")
         if e % 5 == 0:
             print("test: {}".format(test_result()))
+            if agent.epsilon > agent.epsilon_min:
+                agent.epsilon *= agent.epsilon_decay
+        if e % 10 == 0:
+            agent.save("save/dhhsrp-dqn.h5")

@@ -4,6 +4,7 @@ from collections import deque
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.initializers import HeNormal
 
 EPISODES = 1000
 
@@ -16,15 +17,17 @@ class DQNAgent:
         self.epsilon = 1.0  # exploration rate
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.95
-        self.learning_rate = 0.001
+        self.learning_rate = 0.0003
         self.model = self._build_model()
 
     def _build_model(self, _size = 32):
+        #Init zero weight
+        initializer = HeNormal()
         # Neural Net for Deep-Q learning Model
         model = Sequential()
-        model.add(Dense(_size, input_dim=self.state_size, activation='relu'))
-        model.add(Dense(_size, activation='relu'))
-        model.add(Dense(self.action_size, activation='linear'))
+        model.add(Dense(_size, input_dim=self.state_size, activation='relu', kernel_initializer=initializer))
+        model.add(Dense(_size, activation='relu', kernel_initializer=initializer))
+        model.add(Dense(self.action_size, activation='linear',kernel_initializer=initializer))
         model.compile(loss='mse',
                       optimizer=Adam(lr=self.learning_rate))
         return model
@@ -37,6 +40,7 @@ class DQNAgent:
             return random.randrange(self.action_size)
         act_values = self.model.predict(state)
         if (np.isnan(act_values[0][0])):
+            print(state, "nan found!!!")
             quit()
         return np.argmax(act_values[0])  # returns action
 
@@ -47,6 +51,7 @@ class DQNAgent:
             if not done:
                 target = (reward + self.gamma *
                           np.amax(self.model.predict(next_state)[0]))
+
             target_f = self.model.predict(state)
             target_f[0][action] = target
             self.model.fit(state, target_f, epochs=1, verbose=0)

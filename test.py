@@ -7,7 +7,7 @@ import numpy as np
 import utils
 
 #p = PatientGenerator()
-#for i in range(0,100):
+#for i in range(0,10):
 #    p.generate_instance("instances/" + str(i) + ".in")
 
 state_size = 9
@@ -62,4 +62,3 @@ for no in range(75  , 100):
                     ans = ans + 1
     print(ans)
     print("---------------------------------------------------")
-            

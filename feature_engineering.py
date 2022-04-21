@@ -7,8 +7,8 @@ class FeatureExtractor:
         self.env = env
         self.schedule = schedule
     def get_feature(self, request, current_time):
-        decision_point = 1440 * (self.env.day_per_week * current_time[0] + current_time[1])\
-                        + request.current_time
+        decision_point = (1440 * (self.env.day_per_week * current_time[0] + current_time[1])\
+                        + request.current_time)/(1440*self.env.day_per_week*self.env.nb_weeks)
         #Request information
         require_weeks = request.require_time[0]
         require_days = request.require_time[1]

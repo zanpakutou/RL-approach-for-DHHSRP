@@ -87,12 +87,14 @@ class Schedule:
                                 cost = self.planned_routes[nurse][week][day].insert(request.location, time, time + request.require_time[2]*60, checking = True)
                                 if (cost < 0):
                                     _is_ok = False
+                                    break
                                 total_cost += cost;
                             if (_is_ok and total_cost < min_cost_insertion[0]): 
                                 min_cost_insertion = (total_cost, nurse, time, pattern, start_week)
-                            
                             is_ok = is_ok | _is_ok
                         is_time_ok = is_time_ok & is_ok
+                        if is_time_ok == False:
+                            break
                     is_st_week_ok = is_st_week_ok | is_time_ok
                     
                 if (is_st_week_ok):

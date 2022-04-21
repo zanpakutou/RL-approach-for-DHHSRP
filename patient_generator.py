@@ -3,8 +3,8 @@ import numpy as np
 
 class PatientGenerator:
     def __init__(self):
-        self.arrival_rate = 20;
-        self.max_weeks = 4
+        self.arrival_rate = 25;
+        self.max_weeks = 10
         self.max_days = 3
         self.max_hours = 2
         self.max_skill = 3

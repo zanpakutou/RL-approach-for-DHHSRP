@@ -62,19 +62,19 @@ if __name__ == "__main__":
                    
                     #Calculate state
                     state = feature_extractor.get_feature(request, current_time)
-                    state = np.reshape(state, [1, state_size])
+                    np_state = np.reshape(state, [1, state_size])
                     
                     #Derive action
-                    action = agent.act(state)
+                    action = agent.act(np_state)
+                    
                     if (verbose):
-                        log.write(str(state))
-                        log.write(str(action))
+                        log.write(str(state) + "\n")
+                        log.write(str(agent.model.predict(np_state)) + "\n")
                     #Calculate reward
                     reward = 0
                     if action == 0 or valid == False:
                         reward = 0
                     else:
-                        
                         sched.accept_request(request, current_time)
                         reward = 1
                         score = score + 1
@@ -90,7 +90,7 @@ if __name__ == "__main__":
                         done = 0
                     #Experience replay
                     if valid == True or done == 1:
-                        agent.memorize(state, action, reward, next_state, done)                    
+                        agent.memorize(np_state, action, reward, next_state, done)                    
                         if len(agent.memory) > batch_size:
                             agent.replay(batch_size)
                             
@@ -103,6 +103,7 @@ if __name__ == "__main__":
                 agent.epsilon *= agent.epsilon_decay
         if e % 10 == 0:
             agent.save("save/dhhsrp-dqn.h5")
+            
         if verbose :
             log.write("episode: {}/{}, score: {}, e: {:.2}"
                             .format(e, EPISODES, score, agent.epsilon))

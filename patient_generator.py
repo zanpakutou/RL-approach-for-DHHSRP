@@ -4,7 +4,8 @@ import numpy as np
 class PatientGenerator:
     def __init__(self):
         self.arrival_rate = 25;
-        self.max_weeks = 10
+        self.horizon = 10
+        self.max_weeks = 4
         self.max_days = 3
         self.max_hours = 2
         self.max_skill = 3
@@ -22,7 +23,7 @@ class PatientGenerator:
     
     def generate_instance(self, dir):
         with open(dir, 'w') as f:
-            for week in range(0, self.max_weeks):
+            for week in range(0, self.horizon):
                 f.write("---> Week : " +  str(week) + "\n")
                 for day in range(0, 5):
                     f.write("--> Day : " +  str(day) + "\n")

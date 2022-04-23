@@ -7,7 +7,7 @@ import numpy as np
 import utils
 
 #p = PatientGenerator()
-#for i in range(0,100):
+#for i in range(0,500):
 #    p.generate_instance("instances/" + str(i) + ".in")
 
 state_size = 9
@@ -17,7 +17,7 @@ agent.load("save/dhhsrp-dqn.h5")
 agent.epsilon = 0.0001
 
 
-for no in range(75, 100):
+for no in range(0, 10):
     env = Enviroment()
     env.make("instances/test/" + str(no) + ".in", "instances/context.in")
     sched = Schedule(env)
@@ -54,8 +54,8 @@ for no in range(75, 100):
 
                 state = feature_extractor.get_feature(request, current_time)
                 state = np.reshape(state, [1, state_size])
-                #print(state)
                 action = agent.act(state)
+
                 if action == 0:
                     continue
                 else:
@@ -63,4 +63,3 @@ for no in range(75, 100):
                     ans = ans + 1
     print(ans)
     print("---------------------------------------------------")
-            

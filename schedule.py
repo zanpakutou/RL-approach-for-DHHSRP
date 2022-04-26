@@ -67,38 +67,36 @@ class Schedule:
                     #Is not start of time slot
                     if (time % 15 != 0):
                         continue
-                    #Check for c_p weeks
-                    for week in range(start_week, start_week + request.require_time[0]):
-                        is_ok = False
-                        for nurse in range(0, self.nb_nurses):
-                            if (self.qual[nurse] < request.require_skill):
-                                continue
-                            _is_ok = True
-                            total_cost = True
+
+                    #Check for each nurse
+                    for nurse in range(0, self.nb_nurses):
+                        if (self.qual[nurse] < request.require_skill):
+                            continue
+                        nurse_is_ok = True
+                        nurse_total_cost = 0
+                        #For each nurse, visit time, day pattern, start week, calculate the increasing cost
+                        for week in range(start_week, start_week + request.require_time[0]):
+                            if (nurse_is_ok == False):
+                                break
                             for day in pattern:
                                 #Check valid timestamps
                                 if (week == current_time[0] and day < current_time[1]):
-                                    _is_ok = False
-                                    continue
+                                    nurse_is_ok = False
+                                    break
                                 if (week == current_time[0] and day == current_time[1] and time <= current_time[1]):
-                                    _is_ok = False
-                                    continue
+                                    nurse_is_ok = False
+                                    break
                                 #Check valid insertion
                                 cost = self.planned_routes[nurse][week][day].insert(request.location, time, time + request.require_time[2]*60, checking = True)
                                 if (cost < 0):
-                                    _is_ok = False
+                                    nurse_is_ok = False
                                     break
-                                total_cost += cost;
-                            if (_is_ok and total_cost < min_cost_insertion[0]): 
-                                min_cost_insertion = (total_cost, nurse, time, pattern, start_week)
-                            is_ok = is_ok | _is_ok
-                        is_time_ok = is_time_ok & is_ok
-                        if is_time_ok == False:
-                            break
-                    is_st_week_ok = is_st_week_ok | is_time_ok
-                    
-                if (is_st_week_ok):
-                    return (True, min_cost_insertion)
+                                nurse_total_cost = nurse_total_cost + cost;
+                        
+                        if (nurse_is_ok and nurse_total_cost < min_cost_insertion[0]):
+                            min_cost_insertion = (nurse_total_cost, nurse, time, pattern, start_week)                  
+        if (min_cost_insertion[0] < 1000000000):
+            return (True, min_cost_insertion)
         return (False, min_cost_insertion)
         
     def accept_request(self, request, current_time):

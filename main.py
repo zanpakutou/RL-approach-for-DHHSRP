@@ -36,14 +36,14 @@ if __name__ == "__main__":
     batch_size = 4
     EPISODES = 10001
 
-    state_size = 9
+    state_size = 8
     action_size = 2
     agent = DQNAgent(state_size, action_size)
     null_request  = Request(current_time = 0, require_time = (5, 5, 5), require_skill = 0, location = (40, 40))
     log = open("log", "w")
 
     np.random.seed(333)
-    #agent.load("save/dhhsrp-dqn.h5")
+    agent.load("save/dhhsrp-dqn.h5")
     
     for e in range(EPISODES):
         #Init episode by random instance
@@ -76,12 +76,9 @@ if __name__ == "__main__":
                     if action == 0 or valid == False:
                         reward = 0
                     else:
-                        if valid == False :
-                            reward = -1
-                        else:
-                            sched.accept_request(request, current_time)
-                            reward = 1
-                            score = score + 1
+                        sched.accept_request(request, current_time)
+                        reward = 1
+                        score = score + 1
                     #Check if end of episode
                     null_request.current_time = request.current_time
                     next_state = feature_extractor.get_feature(null_request, current_time)

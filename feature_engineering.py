@@ -7,12 +7,13 @@ class FeatureExtractor:
         self.env = env
         self.schedule = schedule
     def get_feature(self, request, current_time):
+        total_time = (1440*self.env.day_per_week*self.env.nb_weeks)
         decision_point = (1440 * (self.env.day_per_week * current_time[0] + current_time[1])\
-                        + request.current_time)/(1440*self.env.day_per_week*self.env.nb_weeks)
+                        + request.current_time)/total_time
         #Request information
-        require_weeks = request.require_time[0]
-        require_days = request.require_time[1]
-        require_hours = request.require_time[2]
+        require_weeks = request.require_time[0]/self.env.nb_weeks
+        require_days = request.require_time[1]/self.env.day_per_week
+        require_hours = request.require_time[2]/2
         #Nurse's resource
         total_idle_time = 0
         avg_idle_time = 0
@@ -20,8 +21,8 @@ class FeatureExtractor:
         ocupied_rate = 0
         count_nurse = 0
         for nurse in range(0, self.env.nb_nurses):
-            #if (self.env.qual[nurse] < request.require_skill):
-            #    continue
+            if (self.env.qual[nurse] < request.require_skill):
+                continue
             count_nurse = count_nurse + 1
             for week in range(0, self.env.nb_weeks):
                 for day in range(0, self.env.day_per_week):
@@ -40,12 +41,13 @@ class FeatureExtractor:
                         prev_visit = visit
                         
                         
-        avg_idle_time = total_idle_time / count_idle
         ocupied_rate = total_idle_time / (count_nurse * self.env.day_per_week \
             * self.env.nb_weeks * (self.env.working_tw[1] - self.env.working_tw[0]))
+        total_idle_time  = total_idle_time / (total_time * self.env.nb_nurses)
+        avg_idle_time = total_idle_time / count_idle
         #Location & Eligibility
         (valid, min_cost_insertion) = self.schedule.check_feasible(request, current_time)
-        cheapest_insertion_cost = min_cost_insertion[0]
+        cheapest_insertion_cost = min_cost_insertion[0] / (2 * 80 * 80) #TODO : parameterize
 
         return [decision_point, require_weeks, require_days, require_hours, total_idle_time,\
-                avg_idle_time, ocupied_rate, cheapest_insertion_cost, valid]
+                avg_idle_time, ocupied_rate, cheapest_insertion_cost]

@@ -10,7 +10,7 @@ import utils
 #for i in range(0,500):
 #    p.generate_instance("instances/" + str(i) + ".in")
 
-state_size = 9
+state_size = 8
 action_size = 2
 agent = DQNAgent(state_size, action_size)
 agent.load("save/dhhsrp-dqn.h5")
@@ -53,9 +53,10 @@ for no in range(0, 10):
                         continue
 
                 state = feature_extractor.get_feature(request, current_time)
+                #print(state)
                 state = np.reshape(state, [1, state_size])
                 action = agent.act(state)
-
+                print(state, action, valid)
                 if action == 0:
                     continue
                 else:

@@ -7,14 +7,13 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.initializers import HeNormal
 from keras import backend as K
 
-
 import tensorflow as tf
 
-class DQNAgent:
+class DDQNAgent:
     def __init__(self, state_size, action_size):
         self.state_size = state_size
         self.action_size = action_size
-        self.memory = deque(maxlen=2000)
+        self.memory = deque(maxlen=4000)
         self.gamma = 1      # discount rate
         self.epsilon = 1.0  # exploration rate
         self.epsilon_min = 0.01
@@ -23,12 +22,6 @@ class DQNAgent:
         self.model = self._build_model()
         self.target_model = self._build_model()
         self.update_target_model()
-
-    """Huber loss for Q Learning
-
-    References: https://en.wikipedia.org/wiki/Huber_loss
-                https://www.tensorflow.org/api_docs/python/tf/losses/huber_loss
-    """
 
     def _huber_loss(self, y_true, y_pred, clip_delta=1.0):
         error = y_true - y_pred
@@ -42,8 +35,8 @@ class DQNAgent:
     def _build_model(self):
         # Neural Net for Deep-Q learning Model
         model = Sequential()
-        model.add(Dense(24, input_dim=self.state_size, activation='relu'))
-        model.add(Dense(24, activation='relu'))
+        model.add(Dense(8, input_dim=self.state_size, activation='relu'))
+        model.add(Dense(4, activation='relu'))
         model.add(Dense(self.action_size, activation='linear'))
         model.compile(loss=self._huber_loss,
                       optimizer=Adam(lr=self.learning_rate))
@@ -69,15 +62,14 @@ class DQNAgent:
             if done:
                 target[0][action] = reward
             else:
-                # a = self.model.predict(next_state)[0]
                 t = self.target_model.predict(next_state)[0]
                 target[0][action] = reward + self.gamma * np.amax(t)
-                # target[0][action] = reward + self.gamma * t[np.argmax(a)]
             self.model.fit(state, target, epochs=1, verbose=0)
 
 
     def load(self, name):
         self.model.load_weights(name)
+        self.update_target_model()
 
     def save(self, name):
         self.model.save_weights(name)

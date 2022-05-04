@@ -1,6 +1,5 @@
-from enviroment import Enviroment
-from enviroment import Request
-from utils import day_patterns, distance
+from enviroment.patient_request import PatientRequest, Request
+from enviroment.utils import day_patterns, distance
 
 class Visit:
     def __init__(self, position, st, ed):
@@ -62,7 +61,7 @@ class Schedule:
                     #Out of working window of nurse
                     if (not self.work_tw[0] <= time <= self.work_tw[1]):
                         continue
-                    if (not self.work_tw[0] <= (time + request.require_time[2]*60) <= self.work_tw[1]):
+                    if (not self.work_tw[0] <= (time + request.require_time[2] * 60) <= self.work_tw[1]):
                         continue
                     #Is not start of time slot
                     if (time % 15 != 0):
@@ -95,7 +94,7 @@ class Schedule:
                         
                         if (nurse_is_ok and nurse_total_cost < min_cost_insertion[0]):
                             min_cost_insertion = (nurse_total_cost, nurse, time, pattern, start_week)                  
-        if (min_cost_insertion[0] < 1000000000):
+        if (min_cost_insertion[0] < 999999900):
             return (True, min_cost_insertion)
         return (False, min_cost_insertion)
         

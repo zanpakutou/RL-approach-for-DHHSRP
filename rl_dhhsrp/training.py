@@ -1,12 +1,17 @@
-from enviroment import Enviroment, Request
-from schedule import Schedule
-from feature_engineering import FeatureExtractor
-from dqn import DQNAgent
+from enviroment.patient_request import PatientRequest, Request
+from enviroment.schedule import Schedule
+from enviroment import utils
+from agent.feature_engineering import FeatureExtractor
+from agent.ddqn import DDQNAgent
+
 import numpy as np
-import utils
+
+instance_dir = "enviroment/instances/"
+
+
 def test_result():
-    env = Enviroment()
-    env.make("instances/test/" + str(0) + ".in", "instances/context.in")
+    env = PatientRequest()
+    env.make(instance_dir + "test/" + str(0) + ".in", instance_dir + "context.in")
     sched = Schedule(env)
     requests = env.get_request()
     feature_extractor = FeatureExtractor(env, sched)
@@ -34,24 +39,26 @@ if __name__ == "__main__":
     done = False
 
     batch_size = 4
-    EPISODES = 10001
+    EPISODES = 10001    
 
     state_size = 8
     action_size = 2
-    agent = DQNAgent(state_size, action_size)
-    null_request  = Request(current_time = 0, require_time = (5, 5, 5), require_skill = 0, location = (40, 40))
+    agent = DDQNAgent(state_size, action_size)
     log = open("log", "w")
-
+    
+    agent.load("save/dhhsrp-ddqn.h5")
     np.random.seed(333)
-    agent.load("save/dhhsrp-dqn.h5")
+    agent.epsilon = 0.0098
     
     for e in range(EPISODES):
         #Init episode by random instance
         no_instance = np.random.randint(500)
-        env = Enviroment()
-        env.make("instances/train/" + str(no_instance) + ".in", "instances/context.in")
+        env = PatientRequest()
+        env.make(instance_dir + "train/" + str(no_instance) + ".in", instance_dir + "context.in")
         sched = Schedule(env)
         requests = env.get_request()
+        null_request  = Request(current_time = 0, require_time = (env.nb_weeks, env.day_per_week, 2), require_skill = 0, location = env.nurse_depot)
+        
         feature_extractor = FeatureExtractor(env, sched)
         score = 0
         verbose = e % 10 == 0
@@ -68,9 +75,10 @@ if __name__ == "__main__":
                     #Derive action
                     action = agent.act(np_state)
                     
-                    if (verbose):
+                    if (verbose and valid == True):
                         log.write(str(state) + "\n")
                         log.write(str(agent.model.predict(np_state)) + "\n")
+                
                     #Calculate reward
                     reward = 0
                     if action == 0 or valid == False:
@@ -80,8 +88,7 @@ if __name__ == "__main__":
                         reward = 1
                         score = score + 1
                     #Check if end of episode
-                    null_request.current_time = request.current_time
-                    next_state = feature_extractor.get_feature(null_request, current_time)
+                    next_state = feature_extractor.get_feature(request, current_time)
                     next_state = np.reshape(next_state, [1, state_size]) 
                     
                     if week == env.nb_weeks - 1 and day == env.day_per_week - 1 and request == requests[week][day][-1]:
@@ -100,10 +107,10 @@ if __name__ == "__main__":
         #Update epsilon of greedy
         if e % 5 == 0:
             print("test: {}".format(test_result()))
-            if agent.epsilon > agent.epsilon_min:
-                agent.epsilon *= agent.epsilon_decay
+        if agent.epsilon > agent.epsilon_min:
+            agent.epsilon *= agent.epsilon_decay
         if e % 10 == 0:
-            agent.save("save/dhhsrp-dqn.h5")
+            agent.save("save/dhhsrp-ddqn.h5")
             
         if verbose :
             log.write("episode: {}/{}, score: {}, e: {:.2}"

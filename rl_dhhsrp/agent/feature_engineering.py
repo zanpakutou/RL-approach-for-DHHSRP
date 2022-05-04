@@ -1,6 +1,5 @@
-from enviroment import Enviroment
-from schedule import Schedule, Visit
-from utils import distance 
+from enviroment.schedule import Schedule, Visit
+from enviroment.utils import distance 
 
 class FeatureExtractor:
     def __init__(self, env, schedule):

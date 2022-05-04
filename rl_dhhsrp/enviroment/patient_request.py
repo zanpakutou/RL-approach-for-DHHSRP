@@ -12,7 +12,7 @@ class Request:
     def __repr__(self):
         return "(" + str(self.current_time) + " " + str(self.require_time) + " " + str(self.require_skill)\
         + " " + str(self.location) + ")"
-class Enviroment:
+class PatientRequest:
     def __init__(self):
         #Init context parameter
         self.nb_nurses = 0

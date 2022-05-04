@@ -56,6 +56,7 @@ for no in range(0, 10):
                     if (action == 0):
                       continue
                     ans_sba = ans_sba + 1
+                    sched.accept_request(request, current_time)
     ##########################################################################################
     env = PatientRequest()
     env = PatientRequest()

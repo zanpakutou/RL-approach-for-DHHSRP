@@ -48,7 +48,6 @@ if __name__ == "__main__":
     
     agent.load("save/dhhsrp-ddqn.h5")
     np.random.seed(333)
-    agent.epsilon = 0.0098
     
     for e in range(EPISODES):
         #Init episode by random instance

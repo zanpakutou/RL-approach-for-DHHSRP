@@ -40,13 +40,13 @@ class Route:
 class Schedule:
     def __init__(self, env):
         self.planned_routes = [[[Route(env.nurse_depot, env.working_tw) for i in range(env.day_per_week)] \
-                                for j in range (env.nb_weeks)] for k in range(env.nb_nurses)] #nurses(weeks(days)))
+                                for j in range (env.scheduling_horizon)] for k in range(env.nb_nurses)] #nurses(weeks(days)))
         self.weeks = []
-        self.horizon = env.nb_weeks
+        self.horizon = env.scheduling_horizon
         self.work_tw = env.working_tw
         self.nb_nurses = env.nb_nurses
         self.qual = env.qual
-       
+        
     def check_feasible(self, request, current_time):
         min_cost_insertion =  (1000000000, -1, -1, (-1), -1)
         
@@ -109,4 +109,17 @@ class Schedule:
         for week in range(start_week, start_week + request.require_time[0]):
             for day in pattern:
                 self.planned_routes[nurse][week][day].insert(request.location, time, time + request.require_time[2] * 60)        
+        return True
+        
+    def is_feasible(self):
+        for week in range(self.horizon):
+            for day in range(len(self.planned_routes[0][week])):
+                for nurse in range(self.nb_nurses):
+                    route = self.planned_routes[nurse][week][day]
+                    for pos in range(1, len(route.visit)):
+                        prev = route.visit[pos - 1]
+                        curr = route.visit[pos]
+                        if (prev.ed + distance(prev.pos, curr.pos) > curr.st):
+                            return False
+                    
         return True

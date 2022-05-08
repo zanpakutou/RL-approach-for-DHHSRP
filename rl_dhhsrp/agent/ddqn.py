@@ -13,11 +13,11 @@ class DDQNAgent:
     def __init__(self, state_size, action_size):
         self.state_size = state_size
         self.action_size = action_size
-        self.memory = deque(maxlen=4000)
-        self.gamma = 1      # discount rate
+        self.memory = deque(maxlen=5000)
+        self.gamma = 0.9997      # discount rate
         self.epsilon = 1.0  # exploration rate
         self.epsilon_min = 0.01
-        self.epsilon_decay = 0.97
+        self.epsilon_decay = 0.98
         self.learning_rate = 0.001
         self.model = self._build_model()
         self.target_model = self._build_model()
@@ -57,15 +57,27 @@ class DDQNAgent:
 
     def replay(self, batch_size):
         minibatch = random.sample(self.memory, batch_size)
+        states = [i[0][0] for i in minibatch]
+        next_states = [i[3][0] for i in minibatch]
+        q_values_state_list = self.model.predict(np.array(states), batch_size = batch_size)
+        q_values_nextstate_list = self.model.predict(np.array(next_states), batch_size = batch_size)
+        q_values_target_nextstate_list = self.target_model.predict(np.array(next_states), batch_size = batch_size)
+        states, targets_f = [], []
+        index = 0
+        
         for state, action, reward, next_state, done in minibatch:
-            target = self.model.predict(state)
+            target = q_values_state_list[index]
             if done:
-                target[0][action] = reward
+                target[action] = reward
             else:
-                t = self.target_model.predict(next_state)[0]
-                target[0][action] = reward + self.gamma * np.amax(t)
-            self.model.fit(state, target, epochs=1, verbose=0)
-
+                a = q_values_nextstate_list[index]
+                t = q_values_target_nextstate_list[index]
+                target[action] = reward + self.gamma * t[np.argmax(a)]
+            states.append(state[0])
+            targets_f.append(target)
+            index = index + 1
+            
+        self.model.fit(np.array(states), np.array(targets_f), batch_size = batch_size, epochs=1, verbose=0)
 
     def load(self, name):
         self.model.load_weights(name)

@@ -8,14 +8,12 @@ import numpy as np
 
 instance_dir = "enviroment/instances/"
 
-
-def test_result():
+def test_result(id):
     env = PatientRequest()
-    env.make(instance_dir + "test/" + str(0) + ".in", instance_dir + "context.in")
+    env.make(instance_dir + "test/" + str(id) + ".in", instance_dir + "context.in")
     sched = Schedule(env)
     requests = env.get_request()
     feature_extractor = FeatureExtractor(env, sched)
-
     ans = 0
     for week in range(env.nb_weeks):
         for day in range(env.day_per_week):
@@ -38,15 +36,16 @@ def test_result():
 if __name__ == "__main__":
     done = False
 
-    batch_size = 4
+    batch_size = 8
     EPISODES = 10001    
 
-    state_size = 8
+    state_size = 7
     action_size = 2
     agent = DDQNAgent(state_size, action_size)
     log = open("log", "w")
+    training_log = open("train_log", "w")
     
-    agent.load("save/dhhsrp-ddqn.h5")
+    #agent.load("save/dhhsrp-ddqn.h5")
     np.random.seed(333)
     
     for e in range(EPISODES):
@@ -56,11 +55,12 @@ if __name__ == "__main__":
         env.make(instance_dir + "train/" + str(no_instance) + ".in", instance_dir + "context.in")
         sched = Schedule(env)
         requests = env.get_request()
-        null_request  = Request(current_time = 0, require_time = (env.nb_weeks, env.day_per_week, 2), require_skill = 0, location = env.nurse_depot)
+        null_request  = Request(current_time = 0, require_time = (env.scheduling_horizon, env.day_per_week, 2), require_skill = 0, location = env.nurse_depot)
         
         feature_extractor = FeatureExtractor(env, sched)
         score = 0
         verbose = e % 10 == 0
+        step = 0
         
         for week in range(env.nb_weeks):
             for day in range(env.day_per_week):
@@ -92,20 +92,25 @@ if __name__ == "__main__":
                     
                     if week == env.nb_weeks - 1 and day == env.day_per_week - 1 and request == requests[week][day][-1]:
                         done = 1
-                        agent.update_target_model()
                     else:
                         done = 0
+                     
                     #Experience replay
                     if valid == True or done == 1:
-                        agent.memorize(np_state, action, reward, next_state, done)                    
-                        if len(agent.memory) > batch_size:
+                        agent.memorize(np_state, action, reward, next_state, done)
+                        step = step + 1                        
+                        if step % 4 == 0 and len(agent.memory) > batch_size:
                             agent.replay(batch_size)
                             
+        agent.update_target_model()
         print("episode: {}/{}, score: {}, e: {:.2}"
                           .format(e, EPISODES, score, agent.epsilon))
+                          
         #Update epsilon of greedy
         if e % 5 == 0:
-            print("test: {}".format(test_result()))
+            print("test: {}".format(test_result(0)))
+            test_res = (test_result(0) + test_result(1) + test_result(2))/3
+            training_log.write(str(e) + ' ' + str(test_res) + '\n')
         if agent.epsilon > agent.epsilon_min:
             agent.epsilon *= agent.epsilon_decay
         if e % 10 == 0:
@@ -116,3 +121,4 @@ if __name__ == "__main__":
                             .format(e, EPISODES, score, agent.epsilon))
             
     log.close()
+    training_log.close()

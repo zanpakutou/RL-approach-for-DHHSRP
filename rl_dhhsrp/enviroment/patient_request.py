@@ -19,11 +19,11 @@ class PatientRequest:
         self.working_tw = (0, 1439)
         self.qual = []
         self.nurse_depot = (0, 0)
+        self.scheduling_horizon = 0
         #Init patient parameter
         self.nb_weeks = 0
         self.day_per_week = 0
         self.requests = []
-        
         
     def make(self, patient_dir, context_dir):
         """Read param for patients from 'patient_dir' and
@@ -45,6 +45,8 @@ class PatientRequest:
                 if "Nurse location:" in line:
                     buff = list(map(int, re.findall(r'\d+', line)))
                     self.nurse_depot = (buff[0], buff[1])
+                if "Scheduling horizon:" in line:
+                    self.scheduling_horizon = int(re.search(r'\d+', line).group())
             cnt = 0
             for line in patient_file.readlines():
                 if "---> Week :" in line:
@@ -54,7 +56,6 @@ class PatientRequest:
                     continue
                 if "--> Day :" in line:
                     self.day_per_week = self.day_per_week + 1
-                   
                     self.requests[-1].append([])
                     continue
                 if "-> Request" in line:

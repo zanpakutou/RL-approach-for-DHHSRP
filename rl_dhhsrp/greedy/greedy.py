@@ -8,8 +8,8 @@ class SBA:
     def __init__(self, schedule, patient_generator):
         self.sched = schedule
         self.pat_generator = patient_generator
-        self.nb_scenarios = 5
-        self.avg_request_p_day = 10
+        self.nb_scenarios = 30
+        self.avg_request_p_day = 20
     def act(self, request, current_time):
         is_accepted = False
         for scen in range(self.nb_scenarios):

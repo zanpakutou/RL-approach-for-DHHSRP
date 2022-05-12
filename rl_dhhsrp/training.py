@@ -36,7 +36,7 @@ def test_result(id):
 if __name__ == "__main__":
     done = False
 
-    batch_size = 8
+    batch_size = 16
     EPISODES = 10001    
 
     state_size = 7
@@ -45,7 +45,7 @@ if __name__ == "__main__":
     log = open("log", "w")
     training_log = open("train_log", "w")
     
-    #agent.load("save/dhhsrp-ddqn.h5")
+    agent.load("save/dhhsrp-ddqn.h5")
     np.random.seed(333)
     
     for e in range(EPISODES):
@@ -111,8 +111,8 @@ if __name__ == "__main__":
             print("test: {}".format(test_result(0)))
             test_res = (test_result(0) + test_result(1) + test_result(2))/3
             training_log.write(str(e) + ' ' + str(test_res) + '\n')
-        if agent.epsilon > agent.epsilon_min:
-            agent.epsilon *= agent.epsilon_decay
+            if agent.epsilon > agent.epsilon_min:
+                agent.epsilon *= agent.epsilon_decay
         if e % 10 == 0:
             agent.save("save/dhhsrp-ddqn.h5")
             

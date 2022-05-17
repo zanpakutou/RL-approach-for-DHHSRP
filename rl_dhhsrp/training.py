@@ -45,7 +45,7 @@ if __name__ == "__main__":
     log = open("log", "w")
     training_log = open("train_log", "w")
     
-    agent.load("save/dhhsrp-ddqn.h5")
+    #agent.load("save/dhhsrp-ddqn-feed.h5")
     np.random.seed(333)
     
     for e in range(EPISODES):
@@ -102,12 +102,12 @@ if __name__ == "__main__":
                         if step % 4 == 0 and len(agent.memory) > batch_size:
                             agent.replay(batch_size)
                             
-        agent.update_target_model()
         print("episode: {}/{}, score: {}, e: {:.2}"
                           .format(e, EPISODES, score, agent.epsilon))
                           
         #Update epsilon of greedy
         if e % 5 == 0:
+            agent.update_target_model()
             print("test: {}".format(test_result(0)))
             test_res = (test_result(0) + test_result(1) + test_result(2))/3
             training_log.write(str(e) + ' ' + str(test_res) + '\n')
@@ -117,7 +117,7 @@ if __name__ == "__main__":
             agent.save("save/dhhsrp-ddqn.h5")
             
         if verbose :
-            log.write("episode: {}/{}, score: {}, e: {:.2}"
+            log.write("episode: {}/{}, score: {}, e: {:.2}\n"
                             .format(e, EPISODES, score, agent.epsilon))
             
     log.close()

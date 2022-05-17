@@ -12,10 +12,10 @@ import numpy as np
 #for i in range(0,500):
 #    p.generate_instance("instances/" + str(i) + ".in")
 
-state_size = 8
+state_size = 7
 action_size = 2
 agent = DDQNAgent(state_size, action_size)
-agent.load("save/dhhsrp-ddqn.h5")
+agent.load("save/dhhsrp-ddqn-670.h5")
 agent.epsilon = 0.0001
 
 

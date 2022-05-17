@@ -13,12 +13,12 @@ class DDQNAgent:
     def __init__(self, state_size, action_size):
         self.state_size = state_size
         self.action_size = action_size
-        self.memory = deque(maxlen=7000)
+        self.memory = deque(maxlen=10000)
         self.gamma = 0.9997      # discount rate
         self.epsilon = 1.0  # exploration rate
         self.epsilon_min = 0.01
-        self.epsilon_decay = 0.95
-        self.learning_rate = 0.001
+        self.epsilon_decay = 0.97
+        self.learning_rate = 0.005
         self.model = self._build_model()
         self.target_model = self._build_model()
         self.update_target_model()
@@ -34,12 +34,18 @@ class DDQNAgent:
 
     def _build_model(self):
         # Neural Net for Deep-Q learning Model
+        lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+            self.learning_rate,
+            decay_steps=5000,
+            decay_rate=0.96,
+            staircase=False)
+
         model = Sequential()
         model.add(Dense(8, input_dim=self.state_size, activation='relu'))
         model.add(Dense(4, activation='relu'))
         model.add(Dense(self.action_size, activation='linear'))
         model.compile(loss=self._huber_loss,
-                      optimizer=Adam(lr=self.learning_rate))
+                      optimizer=Adam(learning_rate=lr_schedule))
         return model
 
     def update_target_model(self):

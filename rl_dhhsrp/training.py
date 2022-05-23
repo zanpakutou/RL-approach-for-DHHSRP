@@ -3,6 +3,7 @@ from enviroment.schedule import Schedule
 from enviroment import utils
 from agent.feature_engineering import FeatureExtractor
 from agent.ddqn import DDQNAgent
+import keras.backend as K
 
 import numpy as np
 
@@ -114,7 +115,7 @@ if __name__ == "__main__":
             if agent.epsilon > agent.epsilon_min:
                 agent.epsilon *= agent.epsilon_decay
         if e % 10 == 0:
-            agent.save("save/dhhsrp-ddqn.h5")
+            agent.save("save/dhhsrp-ddqn-" + str(test_result(0)) + ".h5")
             
         if verbose :
             log.write("episode: {}/{}, score: {}, e: {:.2}\n"

@@ -33,7 +33,7 @@ class Route:
                 min_cost = insert_cost
         if save_pos > -1 : 
             if checking == False :
-                    self.visit.insert(save_pos, Visit(position, start_time, end_time))
+                self.visit.insert(save_pos, Visit(position, start_time, end_time))
             return min_cost
         else:
             return -1

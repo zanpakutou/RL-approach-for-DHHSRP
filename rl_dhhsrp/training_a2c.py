@@ -2,8 +2,10 @@ from enviroment.patient_request import PatientRequest, Request
 from enviroment.schedule import Schedule
 from enviroment import utils
 from agent.feature_engineering import FeatureExtractor
-from agent.ddqn import DDQNAgent
+from agent.actor_critic import A2CAgent
+
 import keras.backend as K
+from tensorflow.keras.utils import to_categorical
 
 import numpy as np
 
@@ -42,13 +44,14 @@ if __name__ == "__main__":
 
     state_size = 7
     action_size = 2
-    agent = DDQNAgent(state_size, action_size)
+    agent = A2CAgent(state_size, action_size)
     log = open("log", "w")
     training_log = open("train_log", "w")
     
     #agent.load("save/dhhsrp-ddqn-feed.h5")
     np.random.seed(333)
     
+    step = 0
     for e in range(EPISODES):
         #Init episode by random instance
         no_instance = np.random.randint(500)
@@ -56,29 +59,35 @@ if __name__ == "__main__":
         env.make(instance_dir + "train/" + str(no_instance) + ".in", instance_dir + "context.in")
         sched = Schedule(env)
         requests = env.get_request()
-        null_request  = Request(current_time = 0, require_time = (env.scheduling_horizon, env.day_per_week, 2), require_skill = 0, location = env.nurse_depot)
+        null_request  = Request(current_time = 0, require_time = (env.scheduling_horizon, env.day_per_week, 2), require_skill = -1, location = env.nurse_depot)
         
         feature_extractor = FeatureExtractor(env, sched)
         score = 0
-        verbose = e % 10 == 0
-        step = 0
+        verbose = e % 1 == 0
+        
+        # Reset episode
+        states, actions, rewards = [], [], []
         
         for week in range(env.nb_weeks):
             for day in range(env.day_per_week):
                 for request in requests[week][day]:
                     current_time = (week, day, request.current_time)
                     (valid, min_cost_insertion) = sched.check_feasible(request, current_time)
+                    
                     #Calculate state
                     state = feature_extractor.get_feature(request, current_time)
                     np_state = np.reshape(state, [1, state_size])
                     
                     #Derive action
-                    action = agent.act(np_state)
-                    
+                    if (valid == True):
+                        action = agent.act(np_state)
+                    else:
+                        action = 0
+                        
                     if (verbose and valid == True):
                         log.write(str(state) + "\n")
-                        log.write(str(agent.model.predict(np_state)) + "\n")
-                
+                        log.write(str(agent.critic.model.predict(np_state)) + " " + str(agent.actor.model.predict(np_state)) + "\n")
+                    
                     #Calculate reward
                     reward = 0
                     if action == 0 or valid == False:
@@ -87,39 +96,34 @@ if __name__ == "__main__":
                         sched.accept_request(request, current_time)
                         reward = 1
                         score = score + 1
-                    #Check if end of episode
-                    next_state = feature_extractor.get_feature(request, current_time)
+                    
+                    #Check next state
+                    null_request  = request
+                    null_request.require_skill = -1
+                    next_state = feature_extractor.get_feature(null_request, current_time)
                     next_state = np.reshape(next_state, [1, state_size]) 
                     
-                    if week == env.nb_weeks - 1 and day == env.day_per_week - 1 and request == requests[week][day][-1]:
-                        done = 1
-                    else:
-                        done = 0
-                     
-                    #Experience replay
-                    if valid == True or done == 1:
-                        agent.memorize(np_state, action, reward, next_state, done)
-                        step = step + 1                        
-                        if step % 4 == 0 and len(agent.memory) > batch_size:
-                            agent.replay(batch_size)
-                            
-        print("episode: {}/{}, score: {}, e: {:.2}"
-                          .format(e, EPISODES, score, agent.epsilon))
-                          
-        #Update epsilon of greedy
+                    # Memorize (s, a, r) for training
+                    if (valid == True):
+                        agent.upd(np_state, action, reward, next_state)
+                        #states.append(state)
+                        #actions.append(np.reshape(action, [1, 1]))
+                        #rewards.append(np.reshape(reward, [1, 1]))
+                    
+        print("episode: {}/{}, score: {}"
+                          .format(e, EPISODES, score))
+        #Update log
         if e % 5 == 0:
-            agent.update_target_model()
             print("test: {}".format(test_result(0)))
             test_res = (test_result(0) + test_result(1) + test_result(2))/3
             training_log.write(str(e) + ' ' + str(test_res) + '\n')
-            if agent.epsilon > agent.epsilon_min:
-                agent.epsilon *= agent.epsilon_decay
-        if e % 10 == 0:
-            agent.save("save/dhhsrp-ddqn-" + str(test_result(0)) + ".h5")
+            training_log.flush()
+            if e % 10 == 0:
+                agent.save("save/dhhsrp-a2c-" + str(test_res))
             
         if verbose :
-            log.write("episode: {}/{}, score: {}, e: {:.2}\n"
-                            .format(e, EPISODES, score, agent.epsilon))
+            log.write("episode: {}/{}, score: {}\n".format(e, EPISODES, score))
+            log.flush()
             
     log.close()
     training_log.close()

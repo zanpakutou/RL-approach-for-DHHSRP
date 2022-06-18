@@ -6,7 +6,7 @@ class FeatureExtractor:
         self.env = env
         self.schedule = schedule
     def get_feature(self, request, current_time):
-        total_time = ((self.env.working_tw[1] - self.env.working_tw[0])*self.env.day_per_week*self.env.scheduling_horizon)
+        total_time = ((self.env.working_tw[1] - self.env.working_tw[0]) * self.env.day_per_week * self.env.scheduling_horizon)
 
         #Request information
         require_weeks = request.require_time[0]/self.env.scheduling_horizon
@@ -17,7 +17,7 @@ class FeatureExtractor:
         avgl_idle_time_avai = 0
         count_idle = 0
         ocupied_rate = 0
-        count_nurse = 0
+        count_nurse = 1
         for nurse in range(0, self.env.nb_nurses):
             if (self.env.qual[nurse] < request.require_skill):
                 continue
@@ -49,6 +49,7 @@ class FeatureExtractor:
         #Location & Eligibility
         (valid, min_cost_insertion) = self.schedule.check_feasible(request, current_time)
         cheapest_insertion_cost = min_cost_insertion[0] / (80 * 80)
-
+        if (request.require_skill < 0):
+            cheapest_insertion_cost = 1
         return [require_weeks, require_days, require_hours, total_idle_time_avai,\
                 avgl_idle_time_avai, ocupied_rate, cheapest_insertion_cost]

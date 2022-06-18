@@ -48,8 +48,7 @@ class Schedule:
         self.qual = env.qual
         
     def check_feasible(self, request, current_time):
-        min_cost_insertion =  (1000000000, -1, -1, (-1), -1)
-        
+        min_cost_insertion =  (1000000000, -1, -1, [-1], -1)
         for pattern in day_patterns:
             if (len(pattern) != request.require_time[1]):
                 continue
@@ -98,14 +97,16 @@ class Schedule:
             return (True, min_cost_insertion)
         return (False, min_cost_insertion)
         
-    def accept_request(self, request, current_time):
+    def accept_request(self, request, current_time, info = ()):
         """Update the planned routes after accept the request
         """
-        (ok, min_cost_insertion) = self.check_feasible(request, current_time)
-        if ok == False:
-            return False
-        (total_cost, nurse, time, pattern, start_week) = min_cost_insertion
-        
+        if (info == ()):
+            (ok, min_cost_insertion) = self.check_feasible(request, current_time)
+            if ok == False:
+                return False
+            (total_cost, nurse, time, pattern, start_week) = min_cost_insertion
+        else: 
+            (nurse, time, pattern, start_week) = info
         for week in range(start_week, start_week + request.require_time[0]):
             for day in pattern:
                 self.planned_routes[nurse][week][day].insert(request.location, time, time + request.require_time[2] * 60)        
@@ -121,5 +122,4 @@ class Schedule:
                         curr = route.visit[pos]
                         if (prev.ed + distance(prev.pos, curr.pos) > curr.st):
                             return False
-                    
         return True

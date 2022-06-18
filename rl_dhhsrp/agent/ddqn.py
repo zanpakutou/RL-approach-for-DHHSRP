@@ -18,7 +18,7 @@ class DDQNAgent:
         self.epsilon = 1.0  # exploration rate
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.97
-        self.learning_rate = 0.003
+        self.learning_rate = 0.002
         self.model = self._build_model()
         self.target_model = self._build_model()
         self.update_target_model()
@@ -36,7 +36,7 @@ class DDQNAgent:
         # Neural Net for Deep-Q learning Model
         lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
             self.learning_rate,
-            decay_steps=5000,
+            decay_steps=4000,
             decay_rate=0.96,
             staircase=False
         )

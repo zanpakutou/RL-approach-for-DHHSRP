@@ -9,19 +9,19 @@ from enviroment.patient_generator import PatientGenerator
 import numpy as np
 
 #p = PatientGenerator()
-#for i in range(0,500):
-#    p.generate_instance("instances/" + str(i) + ".in")
+#for i in range(0,50):
+#    p.generate_instance("enviroment/test_greedy/" + str(i) + ".in")
 
 state_size = 7
 action_size = 2
 agent = DDQNAgent(state_size, action_size)
-agent.load("save/dhhsrp-ddqn-670.h5")
+agent.load("save/dhhsrp-ddqn-664.h5")
 agent.epsilon = 0.0001
 
 
-for no in range(0, 10):
+for no in range(0, 50):
     env = PatientRequest()
-    env.make("enviroment/instances/test/" + str(no) + ".in", "enviroment/instances/context.in")
+    env.make("enviroment/test_greedy/" + str(no) + ".in", "enviroment/test_greedy/context.in")
     sched = Schedule(env)
 
     feature_extractor = FeatureExtractor(env, sched)
@@ -39,7 +39,7 @@ for no in range(0, 10):
                     sched.accept_request(request, current_time)
     ##########################################################################################
     env = PatientRequest()
-    env.make("enviroment/instances/test/" + str(no) + ".in", "enviroment/instances/context.in")
+    env.make("enviroment/test_greedy/" + str(no) + ".in", "enviroment/test_greedy/context.in")
     sched = Schedule(env)
 
     feature_extractor = FeatureExtractor(env, sched)
@@ -53,14 +53,15 @@ for no in range(0, 10):
                 (valid, min_cost_insertion) = sched.check_feasible(request, current_time)
                 if valid == True :
                     action = sba.act(request, current_time)
-                    if (action == 0):
+                    if (action[0] == 0):
                       continue
                     ans_sba = ans_sba + 1
-                    sched.accept_request(request, current_time)
+                    #print(action)
+                    sched.accept_request(request, current_time, action[1])
     ##########################################################################################
+    ''' env = PatientRequest()
     env = PatientRequest()
-    env = PatientRequest()
-    env.make("enviroment/instances/test/" + str(no) + ".in", "enviroment/instances/context.in")
+    env.make("enviroment/test_greedy/" + str(no) + ".in", "enviroment/test_greedy/context.in")
     sched = Schedule(env)
     requests = env.get_request()
     feature_extractor = FeatureExtractor(env, sched)
@@ -78,10 +79,9 @@ for no in range(0, 10):
                 #print(state)
                 state = np.reshape(state, [1, state_size])
                 action = agent.act(state)
-                action = agent.act(state)
                 if action == 0:
                     continue
                 else:
                     sched.accept_request(request, current_time)
-                    ans_RL = ans_RL + 1
-    print(str(ans_greedy) + ',' + str(ans_sba) + ',' + str(ans_RL))
+                    ans_RL = ans_RL + 1'''
+    print(str(ans_greedy) + ',' + str(ans_sba))

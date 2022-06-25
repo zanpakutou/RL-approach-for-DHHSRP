@@ -1,8 +1,8 @@
 from enviroment.patient_request import PatientRequest, Request
 from enviroment.schedule import Schedule
 from enviroment import utils
-from agent.feature_engineering import FeatureExtractor
-from agent.ddqn import DDQNAgent
+#from agent.feature_engineering import FeatureExtractor
+#from agent.ddqn import DDQNAgent
 from greedy.greedy import SBA
 from enviroment.patient_generator import PatientGenerator
 
@@ -14,9 +14,9 @@ import numpy as np
 
 state_size = 7
 action_size = 2
-agent = DDQNAgent(state_size, action_size)
-agent.load("save/dhhsrp-ddqn-664.h5")
-agent.epsilon = 0.0001
+#agent = DDQNAgent(state_size, action_size)
+#agent.load("save/dhhsrp-ddqn-664.h5")
+#agent.epsilon = 0.0001
 
 
 for no in range(0, 50):
@@ -24,7 +24,7 @@ for no in range(0, 50):
     env.make("enviroment/test_greedy/" + str(no) + ".in", "enviroment/test_greedy/context.in")
     sched = Schedule(env)
 
-    feature_extractor = FeatureExtractor(env, sched)
+    #feature_extractor = FeatureExtractor(env, sched)
     requests = env.get_request()
 
     ans_greedy = 0
@@ -42,7 +42,7 @@ for no in range(0, 50):
     env.make("enviroment/test_greedy/" + str(no) + ".in", "enviroment/test_greedy/context.in")
     sched = Schedule(env)
 
-    feature_extractor = FeatureExtractor(env, sched)
+    #feature_extractor = FeatureExtractor(env, sched)
     requests = env.get_request()
     sba = SBA(sched, PatientGenerator())
     ans_sba = 0

@@ -63,11 +63,11 @@ if __name__ == "__main__":
         
         feature_extractor = FeatureExtractor(env, sched)
         score = 0
-        verbose = e % 1 == 0
+        verbose = e % 5 == 0
         
         # Reset episode
         states, actions, rewards = [], [], []
-        
+        ok = False
         for week in range(env.nb_weeks):
             for day in range(env.day_per_week):
                 for request in requests[week][day]:
@@ -105,11 +105,12 @@ if __name__ == "__main__":
                     
                     # Memorize (s, a, r) for training
                     if (valid == True):
-                        agent.upd(np_state, action, reward, next_state)
-                        #states.append(state)
-                        #actions.append(np.reshape(action, [1, 1]))
-                        #rewards.append(np.reshape(reward, [1, 1]))
-                    
+                        #agent.upd(np_state, action, reward, next_state)
+                        states.append(state)
+                        actions.append(np.reshape(action, [1, 1]))
+                        rewards.append(np.reshape(reward, [1, 1]))
+       
+        agent.update_episode(states, actions, rewards)
         print("episode: {}/{}, score: {}"
                           .format(e, EPISODES, score))
         #Update log

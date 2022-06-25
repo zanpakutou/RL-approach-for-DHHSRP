@@ -21,7 +21,7 @@ class SBA:
         self.sched = schedule
         self.pat_generator = patient_generator
         self.nb_scenarios = 10
-        self.avg_request_p_day = 12
+        self.avg_request_p_day = 12 * 5
     def act(self, request, current_time):
         is_accepted = False
         accept_time = []
@@ -54,7 +54,7 @@ class SBA:
                         (valid, min_cost_insertion) = schedulue.check_feasible(request, current_time)
                         if (valid == True):
                             is_accepted = True
-                            accept_time.append((min_cost_insertion[1], min_cost_insertion[2], min_cost_insertion[3], min_cost_insertion[4]))
+                            accept_time.append(min_cost_insertion[1])
                         else:
                             print("???", min_cost_insertion)
                         break
@@ -65,6 +65,6 @@ class SBA:
         if (is_accepted):
             return (1,most_frequent(accept_time))
         else:
-            return (0)
+            return (0, 0)
                 
                 

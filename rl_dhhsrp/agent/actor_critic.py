@@ -24,13 +24,14 @@ class Actor:
         ])
 
     def compute_loss(self, actions, logits, advantages):
+        #print(actions, logits, advantages)
         ce_loss = tf.keras.losses.SparseCategoricalCrossentropy()
         actions = tf.cast(actions, tf.int32)
         policy_loss = ce_loss(
             actions, logits, sample_weight=tf.stop_gradient(advantages))
         probs = tf.nn.softmax(logits)
         entropy_loss = tf.keras.losses.categorical_crossentropy(probs, probs)
-        return policy_loss - entropy_loss * 0.1
+        return policy_loss - entropy_loss * 0.01
 
     def train(self, states, actions, advantages):
         with tf.GradientTape() as tape:
@@ -76,7 +77,8 @@ class A2CAgent:
         self.action_dim = action_size
         self.actor = Actor(self.state_dim, self.action_dim, 0.0001)
         self.critic = Critic(self.state_dim, 0.0001)
-        self.gamma = 0.99
+        self.gamma = 0.9997
+        self.batch_size = 16
 
     def td_target(self, reward, next_state):
         v_value = self.critic.model.predict(next_state)
@@ -98,6 +100,30 @@ class A2CAgent:
         actor_loss = self.actor.train(state, action, advantage)
         critic_loss = self.critic.train(state, td_target)
         
+    def update_episode(self, states, actions, rewards):
+        discount_rewards, cumul = np.zeros_like(rewards, dtype=float), 0.0
+        for t in reversed(range(0, len(rewards))):
+            cumul = rewards[t] + self.gamma * cumul
+            discount_rewards[t] = cumul
+
+        #states = tf.stack(states)
+        state_values = self.critic.model.predict(np.array(states))
+        state_values = np.reshape(state_values, len(state_values))
+        discount_rewards =  np.reshape(discount_rewards, len(rewards))
+        advantages = discount_rewards - state_values
+        #Training on batches
+        indices = np.arange(len(states))
+        np.random.shuffle(indices)
+        for batch in np.split(indices, np.arange(self.batch_size,len(indices),self.batch_size)):
+            batch_states = list(np.array(states)[batch])
+            batch_actions = list(np.array(actions)[batch].reshape([len(batch), 1]))
+            batch_advantages = advantages[batch]
+            batch_rewards = discount_rewards[batch]
+            batch_rewards = np.reshape(batch_rewards, [len(batch_rewards), 1])
+            batch_states = tf.stack(batch_states)
+            actor_loss = self.actor.train(batch_states, batch_actions, batch_advantages)
+            critic_loss = self.critic.train(batch_states, batch_rewards)
+    
     def load(self, name):
         self.actor.model.load_weights(name + "_actor.h5")
         self.critic.model.load_weights(name + "_critic.h5")

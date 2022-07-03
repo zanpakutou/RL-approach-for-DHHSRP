@@ -41,7 +41,7 @@ class SBA:
                 index = 0
                 best_index = -1
                 for _request in requests:
-                    (valid, min_cost_insertion) = schedulue.check_feasible(_request, current_time)
+                    (valid, min_cost_insertion) = schedulue.check_feasible(_request, current_time, weekly_deadline = True)
                     if (valid == True):
                         if (min_cost_insertion[0] < min_cost):
                             min_cost = min_cost_insertion[0]
@@ -51,7 +51,7 @@ class SBA:
 
                 if (is_insertable):
                     if (best_index == 0):
-                        (valid, min_cost_insertion) = schedulue.check_feasible(request, current_time)
+                        (valid, min_cost_insertion) = schedulue.check_feasible(request, current_time, weekly_deadline = True)
                         if (valid == True):
                             is_accepted = True
                             accept_time.append(min_cost_insertion[1])
@@ -59,7 +59,7 @@ class SBA:
                             print("???", min_cost_insertion)
                         break
                         
-                    schedulue.accept_request(requests[best_index], current_time)
+                    schedulue.accept_request(requests[best_index], current_time, weekly_deadline = True)
                     requests.remove(requests[best_index])
 
         if (is_accepted):

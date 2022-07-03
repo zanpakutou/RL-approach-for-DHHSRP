@@ -47,12 +47,14 @@ class Schedule:
         self.nb_nurses = env.nb_nurses
         self.qual = env.qual
         
-    def check_feasible(self, request, current_time, spec_nurse = -1):
+    def check_feasible(self, request, current_time, spec_nurse = -1, weekly_deadline = False):
         min_cost_insertion =  (1000000000, -1, -1, [-1], -1)
         for pattern in day_patterns:
             if (len(pattern) != request.require_time[1]):
                 continue
             max_start_week = self.horizon - request.require_time[0]
+            if (weekly_deadline == True):
+                max_start_week = min(max_start_week, current_time[0] + 1)
             for start_week in range(current_time[0], max_start_week + 1):
                 is_st_week_ok = False
                 for time in range(0, 1440, 15):
@@ -99,10 +101,10 @@ class Schedule:
             return (True, min_cost_insertion)
         return (False, min_cost_insertion)
         
-    def accept_request(self, request, current_time, spec_nurse = -1):
-        """Update the planned routes after accept the request
+    def accept_request(self, request, current_time, spec_nurse = -1, weekly_deadline = False):
+        """ Update the planned routes after accept the request
         """
-        (ok, min_cost_insertion) = self.check_feasible(request, current_time, spec_nurse)
+        (ok, min_cost_insertion) = self.check_feasible(request, current_time, spec_nurse, weekly_deadline = weekly_deadline)
         if ok == False:
             return False
         (total_cost, nurse, time, pattern, start_week) = min_cost_insertion

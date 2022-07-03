@@ -42,7 +42,7 @@ if __name__ == "__main__":
     batch_size = 16
     EPISODES = 10001    
 
-    state_size = 7
+    state_size = 22
     action_size = 2
     agent = A2CAgent(state_size, action_size)
     log = open("log", "w")
@@ -85,7 +85,7 @@ if __name__ == "__main__":
                         action = 0
                         
                     if (verbose and valid == True):
-                        log.write(str(state) + "\n")
+                        log.write(str(list(np.around(np_state, 4))) + "\n")
                         log.write(str(agent.critic.model.predict(np_state)) + " " + str(agent.actor.model.predict(np_state)) + "\n")
                     
                     #Calculate reward

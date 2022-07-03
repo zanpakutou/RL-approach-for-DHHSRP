@@ -18,8 +18,8 @@ class Actor:
     def create_model(self):
         return tf.keras.Sequential([
             Input((self.state_dim)),
-            Dense(8, activation='relu'),
-            Dense(4, activation='relu'),
+            Dense(16, activation='relu'),
+            Dense(16, activation='relu'),
             Dense(self.action_dim, activation='softmax')
         ])
 
@@ -51,8 +51,8 @@ class Critic:
     def create_model(self):
         return tf.keras.Sequential([
             Input((self.state_dim)),
-            Dense(8, activation='relu'),
-            Dense(4, activation='relu'),
+            Dense(16, activation='relu'),
+            Dense(16, activation='relu'),
             Dense(1, activation='linear')
         ])
 
@@ -75,10 +75,10 @@ class A2CAgent:
     def __init__(self, state_size, action_size):
         self.state_dim = state_size
         self.action_dim = action_size
-        self.actor = Actor(self.state_dim, self.action_dim, 0.0001)
-        self.critic = Critic(self.state_dim, 0.0001)
+        self.actor = Actor(self.state_dim, self.action_dim, 0.0005)
+        self.critic = Critic(self.state_dim, 0.0005)
         self.gamma = 0.9997
-        self.batch_size = 16
+        self.batch_size = 32
 
     def td_target(self, reward, next_state):
         v_value = self.critic.model.predict(next_state)

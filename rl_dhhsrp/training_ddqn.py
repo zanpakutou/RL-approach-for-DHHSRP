@@ -20,7 +20,7 @@ def test_result(id):
         for day in range(env.day_per_week):
             for request in requests[week][day]:
                 current_time = (week, day, request.current_time)
-                (valid, min_cost_insertion) = sched.check_feasible(request, current_time)
+                (valid, min_cost_insertion) = sched.check_feasible(request, current_time, weekly_deadline = True)
                 if valid == False :
                         continue
 
@@ -30,7 +30,7 @@ def test_result(id):
                 if action == 0:
                     continue
                 else:
-                    sched.accept_request(request, current_time)
+                    sched.accept_request(request, current_time, weekly_deadline = True)
                     ans = ans + 1
     return ans
     
@@ -40,7 +40,7 @@ if __name__ == "__main__":
     batch_size = 16
     EPISODES = 10001    
 
-    state_size = 7
+    state_size = 22
     action_size = 2
     agent = DDQNAgent(state_size, action_size)
     log = open("log", "w")
@@ -68,7 +68,7 @@ if __name__ == "__main__":
             for day in range(env.day_per_week):
                 for request in requests[week][day]:
                     current_time = (week, day, request.current_time)
-                    (valid, min_cost_insertion) = sched.check_feasible(request, current_time)
+                    (valid, min_cost_insertion) = sched.check_feasible(request, current_time, weekly_deadline = True)
                     #Calculate state
                     state = feature_extractor.get_feature(request, current_time)
                     np_state = np.reshape(state, [1, state_size])
@@ -85,7 +85,7 @@ if __name__ == "__main__":
                     if action == 0 or valid == False:
                         reward = 0
                     else:
-                        sched.accept_request(request, current_time)
+                        sched.accept_request(request, current_time, weekly_deadline = True)
                         reward = 1
                         score = score + 1
                     #Check if end of episode
@@ -114,7 +114,7 @@ if __name__ == "__main__":
             print("test: {}".format(test_result(0)))
             test_res = (test_result(0) + test_result(1) + test_result(2))/3
             training_log.write(str(e) + ' ' + str(test_res) + '\n')
-            
+            training_log.flush()
             if agent.epsilon > agent.epsilon_min:
                 agent.epsilon *= agent.epsilon_decay
             if e % 10 == 0:
@@ -123,6 +123,7 @@ if __name__ == "__main__":
         if verbose :
             log.write("episode: {}/{}, score: {}, e: {:.2}\n"
                             .format(e, EPISODES, score, agent.epsilon))
+            log.flush()
             
     log.close()
     training_log.close()

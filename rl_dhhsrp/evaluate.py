@@ -15,12 +15,11 @@ import numpy as np
 state_size = 22
 action_size = 2
 agent = DDQNAgent(state_size, action_size)
-agent.load("save/dhhsrp-ddqn-535.h5")
+agent.load("save/dhhsrp-ddqn-599.0.h5")
 agent.epsilon = 0.01
 
 
-for no in range(0, 50):
-    '''
+for no in range(0, 10):
     env = PatientRequest()
     env.make("enviroment/instances/test/" + str(no) + ".in", "enviroment/instances/context.in")
     sched = Schedule(env)
@@ -81,4 +80,4 @@ for no in range(0, 50):
                 else:
                     sched.accept_request(request, current_time, weekly_deadline = True)
                     ans_RL = ans_RL + 1
-    print(str(ans_RL))
+    print(str(ans_greedy) + ',' + str(ans_sba) + ',' + str(ans_RL))

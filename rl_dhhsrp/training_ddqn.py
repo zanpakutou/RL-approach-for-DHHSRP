@@ -26,7 +26,13 @@ def test_result(id):
 
                 state = feature_extractor.get_feature(request, current_time)
                 state = np.reshape(state, [1, state_size])
-                action = agent.act(state)
+                mask = [0]
+                for nurse in range(nb_nurse):
+                    check = sched.check_feasible(request, current_time, spec_nurse = nurse, weekly_deadline = True)
+                    if (check[0] == True):
+                        mask.append(nurse + 1)
+                #Derive action
+                action = agent.act(np_state, mask)
                 if action == 0:
                     continue
                 else:
@@ -39,14 +45,16 @@ if __name__ == "__main__":
 
     batch_size = 16
     EPISODES = 10001    
-
-    state_size = 22
-    action_size = 2
+    nb_nurse = 6
+    
+    state_size = 27
+    action_size = 1 + nb_nurse
+    
     agent = DDQNAgent(state_size, action_size)
     log = open("log", "w")
     training_log = open("train_log", "w")
     
-    #agent.load("save/dhhsrp-ddqn-feed.h5")
+    #agent.load("save/start.h5")
     np.random.seed(333)
     
     step = 0
@@ -72,9 +80,14 @@ if __name__ == "__main__":
                     #Calculate state
                     state = feature_extractor.get_feature(request, current_time)
                     np_state = np.reshape(state, [1, state_size])
-                    
+                    #Create mask of actions
+                    mask = [0]
+                    for nurse in range(nb_nurse):
+                        check = sched.check_feasible(request, current_time, spec_nurse = nurse, weekly_deadline = True)
+                        if (check[0] == True):
+                            mask.append(nurse + 1)
                     #Derive action
-                    action = agent.act(np_state)
+                    action = agent.act(np_state, mask)
                     
                     if (verbose and valid == True):
                         log.write(str(state) + "\n")
@@ -85,17 +98,12 @@ if __name__ == "__main__":
                     if action == 0 or valid == False:
                         reward = 0
                     else:
-                        sched.accept_request(request, current_time, weekly_deadline = True)
+                        sched.accept_request(request, current_time, spec_nurse = action - 1, weekly_deadline = True)
                         reward = 1
                         score = score + 1
                     #Check if end of episode
                     next_state = feature_extractor.get_feature(request, current_time)
-                    next_state = np.reshape(next_state, [1, state_size]) 
-                    
-                    if week == env.nb_weeks - 1 and day == env.day_per_week - 1 and request == requests[week][day][-1]:
-                        done = 1
-                    else:
-                        done = 0
+                    next_state = np.reshape(next_state, [1, state_size])
                      
                     #Experience replay
                     if valid == True or done == 1:

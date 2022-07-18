@@ -20,6 +20,7 @@ agent.epsilon = 0.01
 
 
 for no in range(0, 10):
+    
     env = PatientRequest()
     env.make("enviroment/instances/test/" + str(no) + ".in", "enviroment/instances/context.in")
     sched = Schedule(env)
@@ -55,7 +56,7 @@ for no in range(0, 10):
                       continue
                     ans_sba = ans_sba + 1
                     sched.accept_request(request, current_time, action[1], weekly_deadline = True)
-    ##########################################################################################'''
+    ##########################################################################################
     env = PatientRequest()
     env.make("enviroment/instances/test/" + str(no) + ".in", "enviroment/instances/context.in")
     sched = Schedule(env)

@@ -22,7 +22,7 @@ def test_result(id):
         for day in range(env.day_per_week):
             for request in requests[week][day]:
                 current_time = (week, day, request.current_time)
-                (valid, min_cost_insertion) = sched.check_feasible(request, current_time, weekly_deadline = True)
+                (valid, min_cost_insertion) = sched.check_feasible(request, current_time)
                 if valid == False :
                         continue
 
@@ -32,7 +32,7 @@ def test_result(id):
                 if action == 0:
                     continue
                 else:
-                    sched.accept_request(request, current_time, weekly_deadline = True)
+                    sched.accept_request(request, current_time)
                     ans = ans + 1
     return ans
     
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     log = open("log", "w")
     training_log = open("train_log", "w")
     
-    #agent.load("save/dhhsrp-a2c-366")
+    #agent.load("save/dhhsrp-ddqn-feed.h5")
     np.random.seed(333)
     
     step = 0
@@ -72,7 +72,7 @@ if __name__ == "__main__":
             for day in range(env.day_per_week):
                 for request in requests[week][day]:
                     current_time = (week, day, request.current_time)
-                    (valid, min_cost_insertion) = sched.check_feasible(request, current_time, weekly_deadline = True)
+                    (valid, min_cost_insertion) = sched.check_feasible(request, current_time)
                     
                     #Calculate state
                     state = feature_extractor.get_feature(request, current_time)
@@ -93,7 +93,7 @@ if __name__ == "__main__":
                     if action == 0 or valid == False:
                         reward = 0
                     else:
-                        sched.accept_request(request, current_time, weekly_deadline = True)
+                        sched.accept_request(request, current_time)
                         reward = 1
                         score = score + 1
                     

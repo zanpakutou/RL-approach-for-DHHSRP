@@ -14,11 +14,11 @@ class DDQNAgent:
         self.state_size = state_size
         self.action_size = action_size
         self.memory = deque(maxlen=10000)
-        self.gamma = 0.997      # discount rate
+        self.gamma = 0.9997      # discount rate
         self.epsilon = 1.0  # exploration rate
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.97
-        self.learning_rate = 0.0005
+        self.learning_rate = 0.001
         self.model = self._build_model()
         self.target_model = self._build_model()
         self.update_target_model()
@@ -34,11 +34,10 @@ class DDQNAgent:
 
     def _build_model(self):
         # Neural Net for Deep-Q learning Model
-        lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+        lr_schedule = tf.keras.optimizers.schedules.InverseTimeDecay(
             self.learning_rate,
-            decay_steps=5000,
-            decay_rate=0.96,
-            staircase=False
+            decay_steps=4000,
+            decay_rate=0.5
         )
 
         model = Sequential()
@@ -56,16 +55,11 @@ class DDQNAgent:
     def memorize(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
 
-    def act(self, state, mask = []):
+    def act(self, state):
         if np.random.rand() <= self.epsilon:
-            return mask[random.randrange(len(mask))]
-
+            return random.randrange(self.action_size)
         act_values = self.model.predict(state)
-        action = 0
-        for _act in range(len(mask)):
-            if (act_values[0][mask[_act]] > act_values[0][action]):
-                action = mask[_act]
-        return action  # returns action
+        return np.argmax(act_values[0])  # returns action
 
     def replay(self, batch_size):
         minibatch = random.sample(self.memory, batch_size)

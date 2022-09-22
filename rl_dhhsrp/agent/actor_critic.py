@@ -77,7 +77,7 @@ class A2CAgent:
         self.action_dim = action_size
         self.actor = Actor(self.state_dim, self.action_dim, 0.0005)
         self.critic = Critic(self.state_dim, 0.0005)
-        self.gamma = 0.9997
+        self.gamma = 0.997
         self.batch_size = 32
 
     def td_target(self, reward, next_state):
@@ -130,4 +130,4 @@ class A2CAgent:
 
     def save(self, name):
         self.actor.model.save_weights(name + "_actor.h5")
-        self.actor.model.save_weights(name + "_critic.h5")
+        self.critic.model.save_weights(name + "_critic.h5")

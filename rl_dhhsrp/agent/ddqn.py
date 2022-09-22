@@ -6,19 +6,26 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.initializers import HeNormal
 from keras import backend as K
-
 import tensorflow as tf
 
+from utils.utils import lr_log
+tf.config.set_visible_devices([], 'GPU')
+
+class LearningRateLoggingCallback(tf.keras.callbacks.Callback):
+      def on_epoch_end(self, epoch, logs = None):
+        lr = self.model.optimizer._decayed_lr('float32').numpy()
+        lr_log.write(str(lr) + '\n')
+        
 class DDQNAgent:
-    def __init__(self, state_size, action_size):
-        self.state_size = state_size
-        self.action_size = action_size
-        self.memory = deque(maxlen=10000)
-        self.gamma = 0.9997      # discount rate
+    def __init__(self, config):
+        self.state_size = config.state_size
+        self.action_size = config.action_size
+        self.memory = deque(maxlen=config.memory_size)
+        self.gamma = config.discount_factor  # discount rate
         self.epsilon = 1.0  # exploration rate
-        self.epsilon_min = 0.01
-        self.epsilon_decay = 0.97
-        self.learning_rate = 0.003
+        self.epsilon_min = config.epsilon_min
+        self.epsilon_decay = config.epsilon_decay
+        self.learning_rate = config.learning_rate
         self.model = self._build_model()
         self.target_model = self._build_model()
         self.update_target_model()
@@ -32,21 +39,16 @@ class DDQNAgent:
 
         return K.mean(tf.where(cond, squared_loss, quadratic_loss))
 
-    def _build_model(self):
+    def _build_model(self, nb_layers = 2, nb_node = 32):
         # Neural Net for Deep-Q learning Model
-        lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
-            self.learning_rate,
-            decay_steps=6000,
-            decay_rate=0.96,
-            staircase=False
-        )
-
+        initializer = tf.keras.initializers.Orthogonal(gain=-1.41)
         model = Sequential()
-        model.add(Dense(16, input_dim=self.state_size, activation='relu'))
-        model.add(Dense(16, activation='relu'))
-        model.add(Dense(self.action_size, activation='linear'))
+        model.add(Dense(nb_node, input_dim=self.state_size, activation='sigmoid', kernel_initializer = initializer))
+        for _ in range(nb_layers - 1):
+            model.add(Dense(nb_node,  activation='sigmoid', kernel_initializer = initializer))
+        model.add(Dense(self.action_size, activation='relu', kernel_initializer = initializer))
         model.compile(loss=self._huber_loss,
-                      optimizer=Adam(learning_rate=lr_schedule))
+                      optimizer=Adam(learning_rate=self.learning_rate))
         return model
 
     def update_target_model(self):
@@ -74,6 +76,7 @@ class DDQNAgent:
         
         for state, action, reward, next_state, done in minibatch:
             target = q_values_state_list[index]
+
             if done:
                 target[action] = reward
             else:
@@ -83,8 +86,9 @@ class DDQNAgent:
             states.append(state[0])
             targets_f.append(target)
             index = index + 1
-            
-        self.model.fit(np.array(states), np.array(targets_f), batch_size = batch_size, epochs=1, verbose=0)
+
+        callback = LearningRateLoggingCallback()
+        self.model.fit(np.array(states), np.array(targets_f), batch_size = batch_size, epochs=1, verbose=0, callbacks=[callback])
 
     def load(self, name):
         self.model.load_weights(name)

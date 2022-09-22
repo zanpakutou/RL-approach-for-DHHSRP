@@ -23,6 +23,9 @@ class PatientRequest:
         #Init patient parameter
         self.nb_weeks = 0
         self.day_per_week = 0
+        self.max_required_week = 0
+        self.max_day_per_week = 0
+        self.max_required_hour = 0
         self.requests = []
         
     def make(self, patient_dir, context_dir):
@@ -55,7 +58,7 @@ class PatientRequest:
                     self.requests.append([])
                     continue
                 if "--> Day :" in line:
-                    self.day_per_week = self.day_per_week + 1
+                    self.day_per_week =  self.day_per_week + 1
                     self.requests[-1].append([])
                     continue
                 if "-> Request" in line:
@@ -67,6 +70,9 @@ class PatientRequest:
                 if cnt == 2:
                     buff = list(map(int, re.findall(r'\d+', line)))
                     require_time = (buff[0], buff[1], buff[2])
+                    self.max_required_week = max(self.max_required_week, buff[0])
+                    self.max_day_per_week  = max(self.max_day_per_week , buff[1])
+                    self.max_required_hour = max(self.max_required_hour, buff[2])
                 if cnt == 3:
                     require_skill = int(line)
                 if cnt == 4:

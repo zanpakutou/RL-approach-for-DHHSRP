@@ -1,0 +1,101 @@
+import random
+import numpy as np
+from collections import deque
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.initializers import HeNormal
+from keras import backend as K
+import tensorflow as tf
+
+from utils.utils import lr_log
+
+tf.config.set_visible_devices([], 'GPU')
+
+class LearningRateLoggingCallback(tf.keras.callbacks.Callback):
+      def on_epoch_end(self, epoch, logs = None):
+        lr = self.model.optimizer._decayed_lr('float32').numpy()
+        lr_log.write(str(lr) + '\n')
+        
+class DDQNAgent:
+    def __init__(self, state_size, action_size):
+        self.state_size = state_size
+        self.action_size = action_size
+        self.memory = deque(maxlen=100000)
+        self.gamma = 0.9995      # discount rate
+        self.epsilon = 1.0  # exploration rate
+        self.epsilon_min = 0.05
+        self.epsilon_decay = 0.9995
+        self.learning_rate = 0.0005
+        self.model = self._build_model()
+        self.target_model = self._build_model()
+        self.update_target_model()
+
+    def _huber_loss(self, y_true, y_pred, clip_delta=1.0):
+        error = y_true - y_pred
+        cond  = K.abs(error) <= clip_delta
+
+        squared_loss = 0.5 * K.square(error)
+        quadratic_loss = 0.5 * K.square(clip_delta) + clip_delta * (K.abs(error) - clip_delta)
+
+        return K.mean(tf.where(cond, squared_loss, quadratic_loss))
+
+    def _build_model(self):
+        # Neural Net for Deep-Q learning Model
+        lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+            self.learning_rate,
+            decay_steps=6000,
+            decay_rate=0.96
+        )
+        initializer = tf.keras.initializers.Orthogonal()
+        model = Sequential()
+        model.add(Dense(32, input_dim=self.state_size, activation='relu', kernel_initializer = initializer))
+        model.add(Dense(32, input_dim=self.state_size, activation='relu', kernel_initializer = initializer))
+        model.add(Dense(self.action_size, activation='linear', kernel_initializer = initializer))
+        model.compile(loss=self._huber_loss,
+                      optimizer=Adam(learning_rate=self.learning_rate))
+        return model
+
+    def update_target_model(self):
+        # copy weights from model to target_model
+        self.target_model.set_weights(self.model.get_weights())
+
+    def memorize(self, state, action, reward, next_state, done):
+        self.memory.append((state, action, reward, next_state, done))
+
+    def act(self, state):
+        if np.random.rand() <= self.epsilon:
+            return random.randrange(self.action_size)
+        act_values = self.model.predict(state)
+        return np.argmax(act_values[0])  # returns action
+
+    def replay(self, batch_size):
+        minibatch = random.sample(self.memory, batch_size)
+        states = [i[0][0] for i in minibatch]
+        next_states = [i[3][0] for i in minibatch]
+        q_values_state_list = self.model.predict(np.array(states), batch_size = batch_size)
+        q_values_nextstate_list = self.model.predict(np.array(next_states), batch_size = batch_size)
+        q_values_target_nextstate_list = self.target_model.predict(np.array(next_states), batch_size = batch_size)
+        states, targets_f = [], []
+        index = 0
+        
+        for state, action, reward, next_state, done in minibatch:
+            target = q_values_state_list[index]
+            if done:
+                target[action] = reward
+            else:
+                a = q_values_nextstate_list[index]
+                t = q_values_target_nextstate_list[index]
+                target[action] = reward + self.gamma * t[np.argmax(a)]
+            states.append(state[0])
+            targets_f.append(target)
+            index = index + 1
+        callback = LearningRateLoggingCallback()
+        self.model.fit(np.array(states), np.array(targets_f), batch_size = batch_size, epochs=1, verbose=0, callbacks=[callback])
+
+    def load(self, name):
+        self.model.load_weights(name)
+        self.update_target_model()
+
+    def save(self, name):
+        self.model.save_weights(name)

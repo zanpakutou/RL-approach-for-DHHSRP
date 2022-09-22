@@ -1,6 +1,6 @@
 from enviroment.patient_request import PatientRequest, Request
 from enviroment.schedule import Schedule
-from enviroment import utils
+from utils import utils
 from enviroment.patient_generator import PatientGenerator
 from copy import copy, deepcopy
 
@@ -20,8 +20,8 @@ class SBA:
     def __init__(self, schedule, patient_generator):
         self.sched = schedule
         self.pat_generator = patient_generator
-        self.nb_scenarios = 10
-        self.avg_request_p_day = 12 * 5
+        self.nb_scenarios = 5
+        self.avg_request_p_day = 56 * 5
     def act(self, request, current_time):
         is_accepted = False
         accept_time = []
@@ -40,30 +40,28 @@ class SBA:
                 is_insertable = False
                 index = 0
                 best_index = -1
+                insertions = [0]* len(requests)
                 for _request in requests:
                     (valid, min_cost_insertion) = schedulue.check_feasible(_request, current_time, weekly_deadline = True)
                     if (valid == True):
-                        if (min_cost_insertion[0] < min_cost):
-                            min_cost = min_cost_insertion[0]
+                        if (min_cost_insertion[0][0] < min_cost):
+                            min_cost = min_cost_insertion[0][0]
                             best_index = index
                         is_insertable = True
+                    insertions[index] = min_cost_insertion
                     index = index + 1
 
                 if (is_insertable):
                     if (best_index == 0):
-                        (valid, min_cost_insertion) = schedulue.check_feasible(request, current_time, weekly_deadline = True)
-                        if (valid == True):
-                            is_accepted = True
-                            accept_time.append(min_cost_insertion[1])
-                        else:
-                            print("???", min_cost_insertion)
+                        is_accepted = True
+                        accept_time.append(insertions[0][1])
                         break
-                        
-                    schedulue.accept_request(requests[best_index], current_time, weekly_deadline = True)
+
+                    schedulue.accept_checked_request(requests[best_index], insertions[best_index], current_time, weekly_deadline = True)
                     requests.remove(requests[best_index])
 
         if (is_accepted):
-            return (1,most_frequent(accept_time))
+            return (1, most_frequent(accept_time))
         else:
             return (0, 0)
                 

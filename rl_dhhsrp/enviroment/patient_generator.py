@@ -40,8 +40,8 @@ class PatientGenerator:
         
     def generate_patient(self):  
         next_request_time = np.random.exponential(self.arrival_rate)
-        nb_weeks = np.random.randint(1, self.max_weeks + 1)
-        nb_days = np.random.randint(1, self.max_days + 1)
+        nb_weeks = np.random.choice(np.arange(1, 5), p=[0.05, 0.15, 0.3, 0.5])#np.random.randint(1, self.max_weeks + 1)
+        nb_days = np.random.choice(np.arange(1, 4), p=[0.05, 0.35, 0.6]) #np.random.randint(1, self.max_days + 1)
         nb_hours = np.random.randint(1, self.max_hours + 1)
         require_skill = np.random.randint(1, self.max_skill + 1)
         location = self.loc_gen(self.max_location_coor)

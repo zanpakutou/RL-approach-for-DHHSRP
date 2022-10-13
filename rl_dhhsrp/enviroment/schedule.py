@@ -65,17 +65,13 @@ class Route:
                 continue
             if not (end_time + distance(position, next_.pos) <= next_.st):
                 continue
-<<<<<<< HEAD
+
             insert_cost = (
                 distance(prev.pos, position)
                 + distance(position, next_.pos)
                 - distance(prev.pos, next_.pos)
             )
             if insert_cost < min_cost:
-=======
-            insert_cost = distance(prev.pos, position) + distance(position, next_.pos) - distance(prev.pos, next_.pos)
-            if (insert_cost < min_cost):
->>>>>>> 014ac7e5284b3726097d2932dfa84a43d3711d41
                 save_pos = pos
                 min_cost = insert_cost
         if save_pos > -1:

@@ -8,4 +8,4 @@ import numpy as np
 p = PatientGenerator()
 for i in range(0,610):
     print("generate ", i)
-    p.generate_instance("enviroment/instances/new_instances/cluster/150/" + str(i) + ".in")
+    p.generate_instance("enviroment/instances/spec_distribution/150/" + str(i) + ".in")

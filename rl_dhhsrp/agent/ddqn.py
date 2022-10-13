@@ -8,13 +8,15 @@ from tensorflow.keras.initializers import HeNormal
 from keras import backend as K
 import tensorflow as tf
 
-from utils.utils import lr_log
+from utils.logger import Logger
 tf.config.set_visible_devices([], 'GPU')
 
 class LearningRateLoggingCallback(tf.keras.callbacks.Callback):
       def on_epoch_end(self, epoch, logs = None):
-        lr = self.model.optimizer._decayed_lr('float32').numpy()
-        lr_log.write(str(lr) + '\n')
+        if (random.randint(0,5) == 0):
+            lr = self.model.optimizer._decayed_lr('float32').numpy()
+            logger = Logger()
+            logger.write_lr_log(lr)
         
 class DDQNAgent:
     def __init__(self, config):
@@ -41,12 +43,23 @@ class DDQNAgent:
 
     def _build_model(self, nb_layers = 2, nb_node = 32):
         # Neural Net for Deep-Q learning Model
-        initializer = tf.keras.initializers.Orthogonal(gain=-1.41)
+        initializer = tf.keras.initializers.VarianceScaling(scale=2.0, mode='fan_in', distribution='truncated_normal')
         model = Sequential()
-        model.add(Dense(nb_node, input_dim=self.state_size, activation='sigmoid', kernel_initializer = initializer))
+        model.add(Dense(nb_node, input_dim=self.state_size, activation='relu', kernel_initializer = initializer))
         for _ in range(nb_layers - 1):
-            model.add(Dense(nb_node,  activation='sigmoid', kernel_initializer = initializer))
-        model.add(Dense(self.action_size, activation='relu', kernel_initializer = initializer))
+            model.add(Dense(nb_node//2,  activation='relu', kernel_initializer = initializer))
+
+        model.add(Dense(self.action_size, activation='linear', kernel_initializer=tf.keras.initializers.RandomUniform(
+            minval=-0.1, maxval=0.1),
+            bias_initializer=tf.keras.initializers.Constant(0.4)))
+
+        lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+            self.learning_rate,
+            decay_steps=3000,
+            decay_rate=0.95,
+            staircase=True
+        )
+        
         model.compile(loss=self._huber_loss,
                       optimizer=Adam(learning_rate=self.learning_rate))
         return model
@@ -74,21 +87,19 @@ class DDQNAgent:
         states, targets_f = [], []
         index = 0
         
-        for state, action, reward, next_state, done in minibatch:
+        for state, action, reward, next_state, decision in minibatch:
             target = q_values_state_list[index]
-
-            if done:
-                target[action] = reward
-            else:
-                a = q_values_nextstate_list[index]
-                t = q_values_target_nextstate_list[index]
-                target[action] = reward + self.gamma * t[np.argmax(a)]
+            a = q_values_nextstate_list[index]
+            t = q_values_target_nextstate_list[index]
+            target[action] = reward + self.gamma * t[np.argmax(a)]
             states.append(state[0])
             targets_f.append(target)
             index = index + 1
+            if decision == False:
+                target[0] = reward + self.gamma * t[np.argmax(a)]
+                target[1] = reward + self.gamma * t[np.argmax(a)]
 
-        callback = LearningRateLoggingCallback()
-        self.model.fit(np.array(states), np.array(targets_f), batch_size = batch_size, epochs=1, verbose=0, callbacks=[callback])
+        self.model.fit(np.array(states), np.array(targets_f), batch_size = batch_size, epochs=1, verbose=0, callbacks=[LearningRateLoggingCallback()])
 
     def load(self, name):
         self.model.load_weights(name)

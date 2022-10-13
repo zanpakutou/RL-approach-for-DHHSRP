@@ -1,6 +1,6 @@
 from enviroment.patient_request import PatientRequest, Request
 from enviroment.schedule import Schedule
-from utils import utils
+from utils.utils import MAX_VAL
 from enviroment.patient_generator import PatientGenerator
 from copy import copy, deepcopy
 
@@ -17,11 +17,12 @@ def most_frequent(List):
     return num
     
 class SBA:
-    def __init__(self, schedule, patient_generator):
+    def __init__(self, schedule, patient_generator, num_scen = 15, scen_size = 20):
         self.sched = schedule
         self.pat_generator = patient_generator
-        self.nb_scenarios = 5
-        self.avg_request_p_day = 56 * 5
+        self.nb_scenarios = num_scen
+        self.avg_request_p_day = scen_size
+
     def act(self, request, current_time):
         is_accepted = False
         accept_time = []
@@ -36,7 +37,7 @@ class SBA:
             is_insertable = True
             current_time = current_time
             while(is_insertable):
-                min_cost = 100000000
+                min_cost = MAX_VAL
                 is_insertable = False
                 index = 0
                 best_index = -1

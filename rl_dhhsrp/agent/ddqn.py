@@ -74,16 +74,16 @@ class DDQNAgent:
     def act(self, state):
         if np.random.rand() <= self.epsilon:
             return random.randrange(self.action_size)
-        act_values = self.model.predict(state)
+        act_values = self.model.predict(state, verbose = 0)
         return np.argmax(act_values[0])  # returns action
 
     def replay(self, batch_size):
         minibatch = random.sample(self.memory, batch_size)
         states = [i[0][0] for i in minibatch]
         next_states = [i[3][0] for i in minibatch]
-        q_values_state_list = self.model.predict(np.array(states), batch_size = batch_size)
-        q_values_nextstate_list = self.model.predict(np.array(next_states), batch_size = batch_size)
-        q_values_target_nextstate_list = self.target_model.predict(np.array(next_states), batch_size = batch_size)
+        q_values_state_list = self.model.predict(np.array(states), batch_size = batch_size, verbose = 0)
+        q_values_nextstate_list = self.model.predict(np.array(next_states), batch_size = batch_size, verbose = 0)
+        q_values_target_nextstate_list = self.target_model.predict(np.array(next_states), batch_size = batch_size, verbose = 0)
         states, targets_f = [], []
         index = 0
         
@@ -98,7 +98,6 @@ class DDQNAgent:
             if decision == False:
                 target[0] = reward + self.gamma * t[np.argmax(a)]
                 target[1] = reward + self.gamma * t[np.argmax(a)]
-
         self.model.fit(np.array(states), np.array(targets_f), batch_size = batch_size, epochs=1, verbose=0, callbacks=[LearningRateLoggingCallback()])
 
     def load(self, name):

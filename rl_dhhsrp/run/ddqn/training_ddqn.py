@@ -21,12 +21,16 @@ parser.add_argument('--output_folder', type=str, default=".",
     help='Which folder to write logs and output, generate if not exist')
 parser.add_argument('--config', type=int, default=0,
     help='Which config from config.py')
-
-args = parser.parse_args()
-os.makedirs(args.output_folder, exist_ok=True)
-os.makedirs(args.output_folder + "/save", exist_ok=True)
-config = Config().get_configs()[args.config]
-instance_dir = config.instances_dir
+parser.add_argument('--timesteps', type=int, default=10000,
+    help='Number of training timesteps')
+parser.add_argument('--batch_size', type=int, default=512,
+    help='Number of sample for each NN updating')
+parser.add_argument('--discount_factor', type=float, default=0.99,
+    help='Discount factor.')
+parser.add_argument('--NN_size', type=int, default=512,
+    help='Size of each hidden layer')
+parser.add_argument('--lr', type=float, default=1e-6,
+    help='Learning rate of deep Q network')
 
 def evaluate(id):
     env = PatientRequest()
@@ -63,15 +67,23 @@ def evaluate(id):
 
 
 if __name__ == "__main__":
+    args = parser.parse_args()
+    os.makedirs(args.output_folder, exist_ok=True)
+    os.makedirs(args.output_folder + "/save", exist_ok=True)
+    config = Config(batch_size = args.batch_size, discount_factor = args.discount_factor, num_hiddens = args.NN_size,\
+                    learning_rate = args.lr, num_episodes = args.timesteps).get_configs()[args.config]
+    instance_dir = config.instances_dir
+
     set_seed(config.seed)
     batch_size = config.batch_size
-    total_episodes = config.num_episodes
+    total_episodes = int(config.num_episodes)
     state_size = config.state_size
     action_size = config.action_size
     agent = DDQNAgent(config)
     logger = Logger(args.output_folder)
-
     replay_count = 0
+
+
     for e in range(total_episodes):
         # Init episode by random instance
         no_instance = np.random.randint(config.train_instances)
@@ -84,6 +96,7 @@ if __name__ == "__main__":
         score = 0
         verbose = e % config.test_frequency == 0
         logger.init_lr_log(e)
+        pre_state = next_state = []
         # Simulation
         for week in range(env.nb_weeks):
             for day in range(env.day_per_week):
@@ -96,6 +109,7 @@ if __name__ == "__main__":
                     if valid == False:
                         continue
                     # Calculatint state
+                    pre_state = next_state
                     state = feature_extractor.get_feature(
                         request, current_time, min_cost_insertion
                     )
@@ -113,18 +127,18 @@ if __name__ == "__main__":
                         )
                         reward = 0.01
                         score = score + 1
-                    # Check if end of episode
+                    # Calculate next state
                     next_state = feature_extractor.get_feature(
                         request, current_time, min_cost_insertion, is_post_state=True
                     )
-                    next_state = np.reshape(next_state, [1, state_size])
 
                     # Push into the experience replay buffer
                     if week > 3:
                         # State, action, reward, state, decision transition
+                        agent.memorize(pre_state, np.random.randint(2), 0, state, True)
                         agent.memorize(state, action, reward, next_state, True)
                         if verbose and np.random.randint(5) == 0:
-                            logger.write_train_log(state, agent.model.predict(state))
+                            logger.write_train_log(state, agent.model.predict(state, verbose = 0))
         # Replay
         if len(agent.memory) > batch_size:
             for _ in range(config.steps_per_update):

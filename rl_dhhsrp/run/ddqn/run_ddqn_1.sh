@@ -9,7 +9,7 @@
 #SBATCH --nodelist=mpu5
 #SBATCH --mail-user=phamtusan@gmail.com
 
-parent_dir='/home/quy/Repos/RL_DHHSRP' #Change this
+parent_dir='../../../' #Change this
 . ${parent_dir}/env/bin/activate
 source_code="${parent_dir}/rl_dhhsrp/run/ddqn/training_ddqn.py"
 CURRENT_DIR="${parent_dir}/rl_dhhsrp/run/ddqn/"

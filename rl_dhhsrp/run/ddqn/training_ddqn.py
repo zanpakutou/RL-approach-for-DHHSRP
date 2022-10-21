@@ -39,8 +39,7 @@ def evaluate(id):
     requests = env.get_request()
     feature_extractor = FeatureExtractor(env, sched)
     ans = 0
-    saved_epsilon = agent.epsilon
-    agent.epsilon = 0
+
     for week in range(env.nb_weeks):
         for day in range(env.day_per_week):
             for request in requests[week][day]:
@@ -62,7 +61,6 @@ def evaluate(id):
                         request, min_cost_insertion, weekly_deadline=True
                     )
                     ans = ans + 1
-    agent.epsilon = saved_epsilon
     return ans
 
 
@@ -159,7 +157,7 @@ if __name__ == "__main__":
             for test in config.test_instances:
                 test_res = test_res + evaluate(test)
             test_res = test_res / len(config.test_instances)
-            print("test: {}".format(test_res))
+            print("test: {}".format(test_res), flush = True)
             logger.write_test_log(e, score)
             agent.save(
                 args.output_folder + "/save/dhhsrp-ddqn-"

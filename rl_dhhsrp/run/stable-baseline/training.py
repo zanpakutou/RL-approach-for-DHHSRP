@@ -93,7 +93,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
 log_dir = "/tmp/mornitor/"
 os.makedirs(log_dir, exist_ok=True)
-env = TimeLimit(DHHSRP('../../enviroment/instances/new_instances/uniform/150/'),   max_episode_steps=300)
+env = TimeLimit(DHHSRP('../../enviroment/instances/new_instances/uniform/150/'),   max_episode_steps=400)
 # Logs will be saved in log_dir/monitor.csv
 env = Monitor(env, log_dir)
 check_env(env, warn=True)
@@ -103,7 +103,7 @@ callback = SaveOnBestTrainingRewardCallback(check_freq=5e3, log_dir=log_dir)
 model = DQN("MlpPolicy", env, verbose=1,  exploration_fraction = 0.25, exploration_initial_eps = 1, seed = 0,\
             gradient_steps=10, learning_rate = 0.00001)
 # Train the agent
-model.learn(total_timesteps=int(5e5), log_interval = 2e4,  callback=callback)
+model.learn(total_timesteps=int(5e6), log_interval = 2e4,  callback=callback)
 # Save the agent
 model.save("dqn_dhhcsrp")
 del model  # delete trained model to demonstrate loading

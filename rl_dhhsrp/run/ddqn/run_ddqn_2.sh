@@ -15,11 +15,11 @@ source_code="${parent_dir}/rl_dhhsrp/run/ddqn/training_ddqn.py"
 CURRENT_DIR="${parent_dir}/rl_dhhsrp/run/ddqn/"
 
 #Parameter
-default_config=1 #inter arrival rate: 0-> 150, 1->240, 2->360, 3-> simplify instances
+default_config=$1 #inter arrival rate: 0-> 150, 1->240, 2->360, 3-> simplify instances
 time_steps=50000
 batch_size=512
-NN_size=512
-learning_rate=1e-6
+NN_size=128
+learning_rate=0.000002
 discount_factor=0.99
 
 output_folder="${CURRENT_DIR}/${default_config}-${time_steps}-${batch_size}-${NN_size}-${learning_rate}-${discount_factor}"

@@ -84,6 +84,7 @@ class Route:
     def capacity_criteria(self, position, start_time, end_time, checking=False):
         p, s = 0, 0
         best_case = -MAX_VAL
+        save_pos = -1
         for pos in range(1, len(self.visit)):
             prev = self.visit[pos - 1]
             next_ = self.visit[pos]
@@ -105,6 +106,7 @@ class Route:
                 + distance(position, next_.pos)
                 - distance(prev.pos, next_.pos)
             )
+            save_pos = pos
         if best_case > -MAX_VAL:
             if checking == False:
                 self.visit.insert(save_pos, Visit(position, start_time, end_time))
@@ -140,6 +142,7 @@ class Schedule:
         weekly_deadline=False,
         capacity_heur=False,
     ):
+        
         min_cost_insertion = ((MAX_VAL,), -1, -1, [-1], -1, -1)
         if capacity_heur == True:
             min_cost_insertion = (
@@ -256,17 +259,23 @@ class Schedule:
         return True
 
     def accept_checked_request(
-        self, request, min_cost_insertion, spec_nurse=-1, weekly_deadline=False
+        self, request, min_cost_insertion, spec_nurse=-1, weekly_deadline=False, capacity_heur = True
     ):
         """Update the planned routes after accept the request that checked above"""
         (total_cost, nurse, time, pattern, start_week, pat_id) = min_cost_insertion
         self.count_accept_pat[pat_id] = self.count_accept_pat[pat_id] + 1
         for week in range(start_week, start_week + request.require_time[0]):
             for day in pattern:
-                check = self.planned_routes[nurse][week][day].insert(
-                    request.location, time, time + request.require_time[2] * 60
-                )
-                if check[0] < 0:
+                check = None
+                if capacity_heur == True:
+                    check = self.planned_routes[nurse][week][day].capacity_criteria(
+                        request.location, time, time + request.require_time[2] * 60
+                    )
+                else: 
+                    check = self.planned_routes[nurse][week][day].insert(
+                        request.location, time, time + request.require_time[2] * 60
+                    )
+                if check[0] < -0.5:
                     print("??? check fail")
         return True
 

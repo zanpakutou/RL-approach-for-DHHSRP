@@ -27,9 +27,9 @@ def cluster_location_generator(max_location_coor):
 def uniform_location_generator(max_location_coor):
     return (np.random.randint(0, max_location_coor), np.random.randint(0, max_location_coor))
 class PatientGenerator:
-    def __init__(self, arrival_rate = 360, loc_gen = uniform_location_generator):
-        self.arrival_rate = 150;
-        self.horizon = 20
+    def __init__(self, arrival_rate = 150, loc_gen = uniform_location_generator):
+        self.arrival_rate = arrival_rate;
+        self.horizon = 150
         self.max_weeks = 4
         self.max_days = 3
         self.max_hours = 2
@@ -40,8 +40,8 @@ class PatientGenerator:
         
     def generate_patient(self):  
         next_request_time = np.random.exponential(self.arrival_rate)
-        nb_weeks = np.random.choice(np.arange(1, 5), p=[0.05, 0.15, 0.3, 0.5])#np.random.randint(1, self.max_weeks + 1)
-        nb_days = np.random.choice(np.arange(1, 4), p=[0.05, 0.35, 0.6]) #np.random.randint(1, self.max_days + 1)
+        nb_weeks = np.random.randint(1, self.max_weeks + 1)#$np.random.choice(np.arange(1, 5), p=[0.05, 0.15, 0.3, 0.5])
+        nb_days = np.random.randint(1, self.max_days + 1) #np.random.choice(np.arange(1, 4), p=[0.05, 0.35, 0.6]) #
         nb_hours = np.random.randint(1, self.max_hours + 1)
         require_skill = np.random.randint(1, self.max_skill + 1)
         location = self.loc_gen(self.max_location_coor)

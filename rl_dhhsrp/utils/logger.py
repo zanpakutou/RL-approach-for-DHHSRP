@@ -34,6 +34,6 @@ class Logger(metaclass=SingletonMeta):
         self.test_log.flush()
         self.lr_log.flush()
     def close_log(self):
-        self.train_log.flush()
-        self.test_log.flush()
-        self.lr_log.flush()
+        self.train_log.close()
+        self.test_log.close()
+        self.lr_log.close()

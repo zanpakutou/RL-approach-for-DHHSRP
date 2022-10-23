@@ -61,6 +61,6 @@ class FeatureExtractor:
         
 
         features = request_info + [cheapest_insertion_cost] + [remaining_time] + \
-            next_nurses + future_visit + \
+            next_nurses + future_visit + [is_post_state] +\
             total_idle_time_avai + total_travel_time
         return np.reshape(features, [1, len(features)])

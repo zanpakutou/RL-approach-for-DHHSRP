@@ -21,7 +21,7 @@ class Config:
         self.learning_rate = learning_rate;
         self.num_hiddens = num_hiddens;
         self.num_layers = 2;
-        self.state_size = 29
+        self.state_size = 30
         self.action_size = 2
         
         if (config != None):
@@ -40,7 +40,7 @@ class Config:
     def get_config_3(self):
         new_config = Config(self)
         new_config.instances_dir = "../../enviroment/instances/simplify/240/"
-        new_config.state_size = 9
+        new_config.state_size = 10
         return new_config
         
     def get_configs(self):

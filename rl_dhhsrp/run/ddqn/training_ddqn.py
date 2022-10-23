@@ -31,6 +31,8 @@ parser.add_argument('--NN_size', type=int, default=512,
     help='Size of each hidden layer')
 parser.add_argument('--lr', type=float, default=1e-6,
     help='Learning rate of deep Q network')
+parser.add_argument('--obj', type=str, default="patient",
+    help='patient: maximize number of patient. visit: maximize number of visit')
 
 def evaluate(id):
     env = PatientRequest()
@@ -60,7 +62,11 @@ def evaluate(id):
                     sched.accept_checked_request(
                         request, min_cost_insertion, weekly_deadline=True
                     )
-                    ans = ans + 1
+                    
+                    if (args.obj == 'visit')
+                        ans = ans + request.require_time[0] * request.require_time[1]
+                    else:
+                        ans = ans + 1
     return ans
 
 
@@ -87,6 +93,8 @@ if __name__ == "__main__":
         no_instance = np.random.randint(config.train_instances)
         env = PatientRequest()
         env.make(instance_dir + str(no_instance) + ".in", instance_dir + "context.in")
+        env.nb_weeks = 20
+        
         sched = Schedule(env)
         requests = env.get_request()
         feature_extractor = FeatureExtractor(env, sched)
@@ -124,7 +132,12 @@ if __name__ == "__main__":
                             current_time, weekly_deadline=True,
                         )
                         reward = 0.01
-                        score = score + 1
+                        
+                        if (args.obj == 'visit'):
+                            reward = request.require_time[0] * request.require_time[1]/ 200
+                            score = score + request.require_time[0] * request.require_time[1]
+                        else:
+                            score = score + 1 
                     # Calculate next state
                     next_state = feature_extractor.get_feature(
                         request, current_time, min_cost_insertion, is_post_state=True
@@ -176,4 +189,4 @@ if __name__ == "__main__":
         if agent.epsilon > agent.epsilon_min:
             agent.epsilon *= agent.epsilon_decay
         logger.flush_log()
-logger.close()
+logger.close_log()

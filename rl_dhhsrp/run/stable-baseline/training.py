@@ -1,7 +1,7 @@
 import os
 
 from stable_baselines3.common.env_checker import check_env
-from stable_baselines3 import A2C
+from stable_baselines3 import A2C, PPO
 from stable_baselines3 import DQN
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common import results_plotter
@@ -10,28 +10,17 @@ from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.results_plotter import load_results, ts2xy
 
 from gym.wrappers import TimeLimit
-from CustomEnvironment import DHHSRP
+from DHHSRPEnvironment import DHHSRP
 
 import matplotlib.pyplot as plt
 import numpy as np
+import argparse
+
 def moving_average(values, window):
-    """
-    Smooth values by doing a moving average
-    :param values: (numpy array)
-    :param window: (int)
-    :return: (numpy array)
-    """
     weights = np.repeat(1.0, window) / window
     return np.convolve(values, weights, 'valid')
 
-
 def plot_results(log_folder, title='Learning Curve'):
-    """
-    plot the results
-
-    :param log_folder: (str) the save location of the results to plot
-    :param title: (str) the title of the task to plot
-    """
     x, y = ts2xy(load_results(log_folder), 'timesteps')
     print(x)
     print(y)
@@ -45,18 +34,9 @@ def plot_results(log_folder, title='Learning Curve'):
     plt.ylabel('Rewards')
     plt.title(title + " Smoothed")
     plt.show()
-    fig.savefig("log.jpg")
+    fig.savefig(log_folder + "/log.jpg")
 
 class SaveOnBestTrainingRewardCallback(BaseCallback):
-    """
-    Callback for saving a model (the check is done every ``check_freq`` steps)
-    based on the training reward (in practice, we recommend using ``EvalCallback``).
-
-    :param check_freq: (int)
-    :param log_dir: (str) Path to the folder where the model will be saved.
-      It must contains the file created by the ``Monitor`` wrapper.
-    :param verbose: (int)
-    """
     def __init__(self, check_freq: int, log_dir: str, verbose=1):
         super(SaveOnBestTrainingRewardCallback, self).__init__(verbose)
         self.check_freq = check_freq
@@ -91,29 +71,67 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
         return True
 
-log_dir = "/tmp/mornitor/"
-os.makedirs(log_dir, exist_ok=True)
-env = TimeLimit(DHHSRP('../../enviroment/instances/new_instances/uniform/150/'),   max_episode_steps=400)
-# Logs will be saved in log_dir/monitor.csv
-env = Monitor(env, log_dir)
-check_env(env, warn=True)
+if __name__ == "__main__":
+  parser = argparse.ArgumentParser()
+  parser.add_argument('--instance_type', type=int, default=2,
+      help='Which folder to read input from')
+  parser.add_argument('--output_folder', type=str, default=".",
+      help='Which folder to write logs and output, generate if not exist')
+  parser.add_argument('--timesteps', type=int, default=10000,
+      help='Number of training timesteps')
+  parser.add_argument('--batch_size', type=int, default=512,
+      help='Number of sample for each NN updating')
+  parser.add_argument('--discount_factor', type=float, default=0.99,
+      help='Discount factor.')
+  parser.add_argument('--NN_size', type=int, default=128,
+      help='Size of each hidden layer')
+  parser.add_argument('--lr', type=float, default=1e-5,
+      help='Learning rate of deep Q network')
+  parser.add_argument('--obj', type=str, default="patient",
+      help='patient: maximize number of patient. visit: maximize number of visit')
+  parser.add_argument('--alg', type=str, default="DQN",
+      help='Name of algorithm to use')
+  parser.add_argument('--verbose', type=int, default=1,
+      help='Print log of training process or not')
+  args = parser.parse_args()
 
-# Instantiate the agent
-callback = SaveOnBestTrainingRewardCallback(check_freq=5e3, log_dir=log_dir)
-model = DQN("MlpPolicy", env, verbose=1,  exploration_fraction = 0.25, exploration_initial_eps = 1, seed = 0,\
-            gradient_steps=10, learning_rate = 0.00001)
-# Train the agent
-model.learn(total_timesteps=int(5e6), log_interval = 2e4,  callback=callback)
-# Save the agent
-model.save("dqn_dhhcsrp")
-del model  # delete trained model to demonstrate loading
+  instance_folder_dict = {0: '../../enviroment/instances/new_instances/uniform/150/',
+                    1: '../../enviroment/instances/new_instances/uniform/240/',
+                    2: '../../enviroment/instances/new_instances/uniform/360/',
+                    3: '../../enviroment/instances/simplify/240/'}
+  instance_folder = instance_folder_dict[args.instance_type]
 
+  seed = 0
+  log_dir = args.output_folder
+  os.makedirs(log_dir, exist_ok=True)
 
-model = DQN.load("dqn_dhhcsrp", env=env)
+  obj_type = (args.obj == 'visit')
+  env = TimeLimit(DHHSRP(instance_folder, reward_type = obj_type),   max_episode_steps=2000)
+  env = Monitor(env, log_dir)
+  check_env(env, warn=True)
 
-mean_reward, std_reward = evaluate_policy(model, model.get_env(), n_eval_episodes=1)
-print(mean_reward)
+  # Instantiate the agent
+  callback = SaveOnBestTrainingRewardCallback(check_freq=5e3, log_dir=log_dir)
+  # Neural net architechture
+  policy_kwargs = dict(net_arch=[dict(pi=[args.NN_size, args.NN_size], vf=[args.NN_size, args.NN_size])])
+  if (args.alg == 'DQN'):
+    policy_kwargs= dict(net_arch=[args.NN_size, args.NN_size])
+  #Define model
+  model = None
+  model_switcher = {
+        'DQN': DQN("MlpPolicy", env, verbose=args.verbose, learning_rate = args.lr, gamma = args.discount_factor,  seed= seed, \
+              exploration_fraction = 0.33, exploration_initial_eps = 1, gradient_steps=10, batch_size = args.batch_size, \
+              policy_kwargs = policy_kwargs),
+        'PPO': PPO("MlpPolicy", env, verbose = args.verbose, learning_rate = args.lr, gamma = args.discount_factor, seed = seed, policy_kwargs=policy_kwargs),
+        'A2C': A2C("MlpPolicy", env, verbose=args.verbose, learning_rate = args.lr, gamma = args.discount_factor, seed = seed, policy_kwargs=policy_kwargs)
+    }
+  model = model_switcher[args.alg]
+  # Train the agent
+  model.learn(args.timesteps, log_interval = 2e4,  callback=callback)
+  # Save the agent
+  model.save(algs.alg + "_dhhsrp")
 
-
-# Helper from the library
-plot_results(log_dir)
+  #model = DQN.load("dqn_dhhcsrp", env=env)
+  mean_reward, std_reward = evaluate_policy(model, model.get_env(), n_eval_episodes=5)
+  print(mean_reward, std_reward)
+  plot_results(log_dir, title = args.alg + " Learning Curve")

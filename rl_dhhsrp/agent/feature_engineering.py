@@ -36,7 +36,6 @@ class FeatureExtractor:
                         total_travel_time[nurse] = total_travel_time[nurse] + travel_time
                         prev_visit = visit
                     
-
             total_travel_time[nurse] = total_travel_time[nurse] / (total_time)
             total_idle_time_avai[nurse] = total_idle_time_avai[nurse] / (total_time)
             future_visit[nurse] = future_visit[nurse] / (self.env.day_per_week * self.env.max_required_week * working_hours)
@@ -59,7 +58,6 @@ class FeatureExtractor:
             
         remaining_time = 1 - (current_time[1] * 24 * 60 + current_time[2])/(self.env.day_per_week * 24 * 60)
         
-
         features = request_info + [cheapest_insertion_cost] + [remaining_time] + \
             next_nurses + future_visit + [is_post_state] +\
             total_idle_time_avai + total_travel_time

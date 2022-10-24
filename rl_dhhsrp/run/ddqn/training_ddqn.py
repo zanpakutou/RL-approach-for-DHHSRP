@@ -21,17 +21,18 @@ parser.add_argument('--output_folder', type=str, default=".",
     help='Which folder to write logs and output, generate if not exist')
 parser.add_argument('--config', type=int, default=0,
     help='Which config from config.py')
-parser.add_argument('--timesteps', type=int, default=10000,
-    help='Number of training timesteps')
+parser.add_argument('--episodes', type=int, default=10000,
+    help='Number of training episodes')
 parser.add_argument('--batch_size', type=int, default=512,
     help='Number of sample for each NN updating')
 parser.add_argument('--discount_factor', type=float, default=0.99,
     help='Discount factor.')
-parser.add_argument('--NN_size', type=int, default=512,
+parser.add_argument('--NN_size', type=int, default=256,
     help='Size of each hidden layer')
 parser.add_argument('--lr', type=float, default=1e-6,
     help='Learning rate of deep Q network')
-parser.add_argument('--obj', type=str, default="patient",
+parser.add_argument('--obj', type=str, default='patient', 
+    choices=['patient', 'visit'],
     help='patient: maximize number of patient. visit: maximize number of visit')
 
 def evaluate(id):
@@ -63,7 +64,7 @@ def evaluate(id):
                         request, min_cost_insertion, weekly_deadline=True
                     )
                     
-                    if (args.obj == 'visit')
+                    if (args.obj == 'visit'):
                         ans = ans + request.require_time[0] * request.require_time[1]
                     else:
                         ans = ans + 1
@@ -75,7 +76,7 @@ if __name__ == "__main__":
     os.makedirs(args.output_folder, exist_ok=True)
     os.makedirs(args.output_folder + "/save", exist_ok=True)
     config = Config(batch_size = args.batch_size, discount_factor = args.discount_factor, num_hiddens = args.NN_size,\
-                    learning_rate = args.lr, num_episodes = args.timesteps).get_configs()[args.config]
+                    learning_rate = args.lr, num_episodes = args.episodes).get_configs()[args.config]
     instance_dir = config.instances_dir
 
     set_seed(config.seed)
@@ -87,13 +88,11 @@ if __name__ == "__main__":
     logger = Logger(args.output_folder)
     replay_count = 0
 
-
     for e in range(total_episodes):
         # Init episode by random instance
         no_instance = np.random.randint(config.train_instances)
         env = PatientRequest()
         env.make(instance_dir + str(no_instance) + ".in", instance_dir + "context.in")
-        env.nb_weeks = 20
         
         sched = Schedule(env)
         requests = env.get_request()

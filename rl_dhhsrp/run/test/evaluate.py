@@ -9,32 +9,25 @@ from utils.utils import mean, stdev
 from greedy.greedy import SBA
 from enviroment.patient_generator import PatientGenerator
 from config.config import Config
+from stable_baselines3 import DQN
+
+from gym.wrappers import TimeLimit
+from run.stable_baselines.DHHSRPEnvironment import DHHSRP
 
 import csv
 import numpy as np
 
 
-
-instance_dir  = "../../enviroment/instances/new_instances/uniform/150/"
-results = []
-config = Config()
-state_size = config.state_size
-action_size = config.action_size
-
-agent = DDQNAgent(config)
-agent.load("../base/save/dhhsrp-ddqn-509.6666666666667.h5")
-agent.epsilon = 0
-
-for no in range(501, 530):
-    print(no)
+inter_arrival_rate = 360
+instance_dir  = "../../enviroment/instances/new_instances/uniform/" + str(inter_arrival_rate) + "/"
+print(instance_dir)
+def run_DH_greedy(no: int):
     env = PatientRequest()
     env.make(instance_dir + str(no) + ".in", instance_dir + "context.in")
     sched = Schedule(env)
     requests = env.get_request()
-    ans_greedy = 0
-    total_request = 0
-    total_valid = 0
-    stat_DH = []
+    ans_greedy = total_request = 0
+
     for week in range(env.nb_weeks):
         for day in range(env.day_per_week):
             for request in requests[week][day]:
@@ -44,38 +37,44 @@ for no in range(501, 530):
                 if valid == True :
                     ans_greedy = ans_greedy + 1
                     sched.accept_checked_request(request, min_cost_insertion, weekly_deadline = True)
-    #stat_DH = sched.get_metrics()
-    stat_DH  = stat_DH + [ans_greedy, ans_greedy/total_request]
-    print(ans_greedy, total_request)
-    ##########################################################################################
+
+    print("DH schedule \t" + str(ans_greedy) + " per " + str(total_request) + " requests")
+    return sched.get_metrics() + [ans_greedy, ans_greedy/total_request]
+
+def run_CH_greedy(no: int):
     env = PatientRequest()
     env.make(instance_dir + str(no) + ".in", instance_dir + "context.in")
+    
     sched = Schedule(env)
     requests = env.get_request()
-    ans_greedy_cap = 0
-    stat_CH = []
+    ans_greedy_cap = total_request = 0
+
     for week in range(env.nb_weeks):
         for day in range(env.day_per_week):
             for request in requests[week][day]:
+                total_request = total_request + 1
                 current_time = (week, day, request.current_time)
                 (valid, min_cost_insertion) = sched.check_feasible(request, current_time, weekly_deadline = True, capacity_heur = True)
                 if valid == True :
                     ans_greedy_cap = ans_greedy_cap + 1
                     sched.accept_checked_request(request, min_cost_insertion, weekly_deadline = True)
-    #stat_CH = sched.get_metrics()
-    stat_CH = stat_CH + [ans_greedy_cap, ans_greedy_cap/total_request]
-    print(ans_greedy_cap, total_request)
-    ##########################################################################################
+    print("CH schedule \t" + str(ans_greedy_cap) + " per " + str(total_request) + " requests")
+    return sched.get_metrics() + [ans_greedy_cap, ans_greedy_cap/total_request]
+
+def run_SBA_greedy(no : int, nb_scen=10):
     env = PatientRequest()
     env.make(instance_dir + str(no) + ".in", instance_dir + "context.in")
     sched = Schedule(env)
     requests = env.get_request()
-    sba = SBA(sched, PatientGenerator(), 10, 6 * 5)
-    ans_sba = 0
-    stat_SBA = []
+
+    look_up_scensize = {150: 9, 240: 6, 360: 3}
+    scen_size = look_up_scensize[inter_arrival_rate]
+    sba = SBA(sched, PatientGenerator(), nb_scen, scen_size * 5)
+    ans_sba = total_request = 0
     for week in range(env.nb_weeks):
         for day in range(env.day_per_week):
             for request in requests[week][day]:
+                total_request = total_request + 1
                 current_time = (week, day, request.current_time)
                 (valid, min_cost_insertion) = sched.check_feasible(request, current_time, weekly_deadline = True)
                 if valid == True :
@@ -91,32 +90,31 @@ for no in range(501, 530):
                       continue
                     ans_sba = ans_sba + 1
                     sched.accept_request(request, current_time, action[1], weekly_deadline = True)
-    #stat_SBA = sched.get_metrics()
-    stat_SBA = stat_SBA + [ans_sba, ans_sba/total_request]
-    print(ans_sba, total_request)
-    ##########################################################################################
+    print("SBA schedule \t" + str(ans_sba) + " per " + str(total_request) + " requests")
+    return sched.get_metrics()+ [ans_sba, ans_sba/total_request]
+
+def run_RL(no : int, model_path = "../base/save/test.h5"):
+    config = Config()
+    agent = DDQNAgent(config).load(model_path)
+    agent.epsilon = 0
     env = PatientRequest()
     env.make(instance_dir + str(no) + ".in", instance_dir + "context.in")
     sched = Schedule(env)
     requests = env.get_request()
     feature_extractor = FeatureExtractor(env, sched)
-    ans_rl = 0
-    stat_RL = []
+    ans_rl = total_request = 0
     for week in range(env.nb_weeks):
         for day in range(env.day_per_week):
             for request in requests[week][day]:
+                total_request = total_request + 1
                 current_time = (week, day, request.current_time)
                 (valid, min_cost_insertion) = sched.check_feasible(request, current_time, weekly_deadline = True)
                 if valid == True :
                     state = feature_extractor.get_feature(
                         request, current_time, min_cost_insertion
                     )
-                    state = np.reshape(state, [1, state_size])
                     action = agent.act(state)
-                    #Warm up   
-                    if week <= 3:
-                        action = 1
-                    if action == 0:
+                    if action == 0 and week > 3:
                         continue
                     else:
                         sched.accept_checked_request(
@@ -124,13 +122,56 @@ for no in range(501, 530):
                         )
                         ans_rl = ans_rl + 1
 
-    #stat_RL = sched.get_metrics()
-    stat_RL = stat_RL + [ans_rl, ans_rl/total_request]
-    print(ans_rl, total_request)
-    
-    results.append(stat_DH + stat_CH + stat_SBA + stat_RL)
+    print("RL schedule \t" + str(ans_rl) + " per " + str(total_request) + " requests")
+    return sched.get_metrics() + [ans_rl, ans_rl/total_request]
+
+def run_stable_baselines(no: int, model_path = "../stable_baselines/1-5000000-512-216-0.00001-0.99/DQN_model"):
+    config = Config()
+    env_type = TimeLimit(
+        DHHSRP(instance_dir, reward_type=0), max_episode_steps=2000
+    )
+    model = DQN.load(model_path, env=env_type)
+    env = PatientRequest()
+    env.make(instance_dir + str(no) + ".in", instance_dir + "context.in")
+
+    sched = Schedule(env)
+    requests = env.get_request()
+    feature_extractor = FeatureExtractor(env, sched)
+    ans_rl = total_request = 0
+    for week in range(env.nb_weeks):
+        for day in range(env.day_per_week):
+            for request in requests[week][day]:
+                total_request = total_request + 1
+                current_time = (week, day, request.current_time)
+                (valid, min_cost_insertion) = sched.check_feasible(request, current_time, weekly_deadline = True)
+                if valid == True :
+                    state = feature_extractor.get_feature(
+                        request, current_time, min_cost_insertion
+                    )
+                    action, _states = model.predict(state, deterministic=True)
+                    if action == 0 and week > 3:
+                        continue
+                    else:
+                        sched.accept_checked_request(
+                            request, min_cost_insertion, weekly_deadline=True
+                        )
+                        ans_rl = ans_rl + 1
+
+    print("RL schedule \t" + str(ans_rl) + " per " + str(total_request) + " requests")
+    return sched.get_metrics() + [ans_rl, ans_rl/total_request]
+
+results = []
+
+for no in range(501, 530):
+    print(no)
+    stat_DH = run_DH_greedy(no)
+    stat_CH = run_CH_greedy(no)
+    stat_SBA = run_SBA_greedy(no)
+    stat_RL= run_stable_baselines(no)
+
+    results.append(stat_DH + stat_CH  + stat_SBA + stat_RL)
     print("----------------------------------------")
-#results= np.array(results).T.tolist()
+
 with open('result.csv', 'w') as f:
     write = csv.writer(f)
     for line in results:

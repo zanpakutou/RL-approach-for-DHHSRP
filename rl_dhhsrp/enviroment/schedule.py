@@ -142,12 +142,12 @@ class Schedule:
         weekly_deadline=False,
         capacity_heur=False,
     ):
-        
+
         min_cost_insertion = ((MAX_VAL,), -1, -1, [-1], -1, -1)
         if capacity_heur == True:
             min_cost_insertion = (
                 (MAX_VAL, MAX_VAL, MAX_VAL, MAX_VAL),
-                -1, -1, [-1], -1, -1,
+                -1,-1,[-1],-1,-1,
             )
 
         pat_id = -1
@@ -205,14 +205,20 @@ class Schedule:
                                     break
                                 # Check valid insertion
                                 if capacity_heur == True:
-                                    cost = self.planned_routes[nurse][week][day].capacity_criteria(
-                                        request.location, time,
-                                        time + request.require_time[2] * 60, checking=True,
+                                    cost = self.planned_routes[nurse][week][
+                                        day
+                                    ].capacity_criteria(
+                                        request.location,
+                                        time,
+                                        time + request.require_time[2] * 60,
+                                        checking=True,
                                     )
                                 else:
                                     cost = self.planned_routes[nurse][week][day].insert(
-                                        request.location, time,
-                                        time + request.require_time[2] * 60, checking=True,
+                                        request.location,
+                                        time,
+                                        time + request.require_time[2] * 60,
+                                        checking=True,
                                     )
 
                                 if cost[0] < 0:
@@ -232,8 +238,12 @@ class Schedule:
                             )
                         if nurse_is_ok and nurse_total_cost < min_cost_insertion[0]:
                             min_cost_insertion = (
-                                nurse_total_cost, nurse, time,
-                                pattern, start_week, pat_id,
+                                nurse_total_cost,
+                                nurse,
+                                time,
+                                pattern,
+                                start_week,
+                                pat_id,
                             )
 
         if min_cost_insertion[0] < (MAX_VAL - 1, MAX_VAL, MAX_VAL, MAX_VAL):
@@ -259,7 +269,12 @@ class Schedule:
         return True
 
     def accept_checked_request(
-        self, request, min_cost_insertion, spec_nurse=-1, weekly_deadline=False, capacity_heur = True
+        self,
+        request,
+        min_cost_insertion,
+        spec_nurse=-1,
+        weekly_deadline=False,
+        capacity_heur=False,
     ):
         """Update the planned routes after accept the request that checked above"""
         (total_cost, nurse, time, pattern, start_week, pat_id) = min_cost_insertion
@@ -271,7 +286,7 @@ class Schedule:
                     check = self.planned_routes[nurse][week][day].capacity_criteria(
                         request.location, time, time + request.require_time[2] * 60
                     )
-                else: 
+                else:
                     check = self.planned_routes[nurse][week][day].insert(
                         request.location, time, time + request.require_time[2] * 60
                     )

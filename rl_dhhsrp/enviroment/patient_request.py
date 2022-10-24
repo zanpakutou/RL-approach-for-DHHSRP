@@ -28,7 +28,7 @@ class PatientRequest:
         self.max_required_hour = 0
         self.requests = []
         
-    def make(self, patient_dir, context_dir):
+    def make(self, patient_dir, context_dir, nb_weeks=20):
         """Read param for patients from 'patient_dir' and
             param for nurses from context_dir
         """
@@ -80,7 +80,7 @@ class PatientRequest:
                     location = (buff[0], buff[1])
                     r = Request(current_time, require_time, require_skill, location)
                     self.requests[-1][-1].append(r)
-                
+            self.nb_weeks = min(self.nb_weeks, nb_weeks)
         except FileNotFoundError:
             print("The file doesn't exist")
         finally:

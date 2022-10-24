@@ -29,9 +29,8 @@ class DHHSRP(gym.Env):
         #0 -> number of patient, 1-> number of visit
         self.reward_type = reward_type
         self.env = PatientRequest()
-        self.env.make(self.instance_dir + str(0) + ".in", self.instance_dir + "context.in")
-        self.env.scheduling_horizon = 150
-        self.env.nb_weeks = 146
+        self.env.make(self.instance_dir + str(0) + ".in", self.instance_dir + "context.in", nb_weeks = 145)
+
         self.action_space = spaces.Discrete(2)
         self.observation_space = spaces.Box(low=0, high=1,
                                                 shape=(1, 4 * self.env.nb_nurses + 6,), dtype=np.float64)
@@ -60,7 +59,7 @@ class DHHSRP(gym.Env):
         instance_no = np.random.randint(900)
         # Initialize the agent at the right of the grid
         self.env = PatientRequest()
-        self.env.make(self.instance_dir + str(instance_no) + ".in", self.instance_dir + "context.in")
+        self.env.make(self.instance_dir + str(instance_no) + ".in", self.instance_dir + "context.in", nb_weeks = 145)
         self.env.scheduling_horizon = 150
         self.env.nb_weeks = 146
         self.sched = Schedule(self.env)

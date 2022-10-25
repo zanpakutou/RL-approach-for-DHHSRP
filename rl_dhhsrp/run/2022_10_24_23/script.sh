@@ -1,11 +1,12 @@
 #!/bin/bash
 #SBATCH --array=1
-#SBATCH --job-name=ddqn_1
+#SBATCH --job-name=ddqn_2
 #SBATCH --time=54:15:00
 #SBATCH --cpus-per-task=4
 #SBATCH --mem-per-cpu=16G
 #SBATCH --nodelist=mpu6
 #SBATCH --mail-user=phamtusan@gmail.com
+#SBATCH --output/ssd6/san/software/RL-approach-for-DHHSRP/rl_dhhsrp/run/2022_10_24_23/%x_%a.out
 
 #Parameter
 default_config=$1 #inter arrival rate: 0-> 150, 1->240, 2->360, 3-> simplify instances
@@ -19,16 +20,11 @@ discount_factor=0.995
 parent_dir='/ssd6/san/software/RL-approach-for-DHHSRP' #Change this
 source_code="${parent_dir}/rl_dhhsrp/run/ddqn/training_ddqn.py"
 CURRENT_DIR="${parent_dir}/rl_dhhsrp/run/ddqn/"
-
-output_folder="${CURRENT_DIR}/${default_config}-${episodes}-${batch_size}-${NN_size}-${learning_rate}-${discount_factor}"
-out_stream="${output_folder}/out.txt"
-err_stream="${output_folder}/err.txt"
-
-#SBATCH --output=$output_folder/%x_%a.out
-
 . ${parent_dir}/.env/bin/activate
 
-
+output_folder="output/ssd6/san/software/RL-approach-for-DHHSRP/rl_dhhsrp/run/2022_10_24_23"
+out_stream="${output_folder}/out.txt"
+err_stream="${output_folder}/err.txt"
 
 
 mkdir $output_folder

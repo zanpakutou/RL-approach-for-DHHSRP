@@ -1,16 +1,11 @@
 #!/bin/bash
 #SBATCH --array=1
-#SBATCH --job-name=10_11_16
-#SBATCH --time=24:15:00
+#SBATCH --job-name=ddqn_1
+#SBATCH --time=54:15:00
 #SBATCH --cpus-per-task=4
-#SBATCH --mem-per-cpu=2G
-#SBATCH --nodelist=mpu5
+#SBATCH --mem-per-cpu=16G
+#SBATCH --nodelist=mpu6
 #SBATCH --mail-user=phamtusan@gmail.com
-
-parent_dir='../../../' #Change this
-. ${parent_dir}/env/bin/activate
-source_code="${parent_dir}/rl_dhhsrp/run/ddqn/training_ddqn.py"
-CURRENT_DIR="${parent_dir}/rl_dhhsrp/run/ddqn/"
 
 #Parameter
 default_config=$1 #inter arrival rate: 0-> 150, 1->240, 2->360, 3-> simplify instances
@@ -20,9 +15,18 @@ NN_size=512
 learning_rate=0.000003
 discount_factor=0.999
 
+parent_dir='/ssd6/san/software/RL-approach-for-DHHSRP' #Change this
+source_code="${parent_dir}/rl_dhhsrp/run/ddqn/training_ddqn.py"
+CURRENT_DIR="${parent_dir}/rl_dhhsrp/run/ddqn/"
+
 output_folder="${CURRENT_DIR}/${default_config}-${episodes}-${batch_size}-${NN_size}-${learning_rate}-${discount_factor}"
 out_stream="${output_folder}/out.txt"
 err_stream="${output_folder}/err.txt"
+
+#SBATCH --output=$output_folder/%x_%a.out
+
+. ${parent_dir}/.env/bin/activate
+
 
 mkdir $output_folder
 echo " **** Training ddqn agent ..."

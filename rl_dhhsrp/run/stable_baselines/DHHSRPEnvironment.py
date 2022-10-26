@@ -23,7 +23,7 @@ class DHHSRP(gym.Env):
     ACCEPT = 1
     REJECT = 0
 
-    def __init__(self, instance_dir = "../../enviroment/instances/new_instances/uniform/150/", reward_type= 0):
+    def __init__(self, instance_dir = "../../enviroment/instances/uniform/150/", reward_type= 0):
         super(DHHSRP, self).__init__()
         self.instance_dir = instance_dir
         #0 -> number of patient, 1-> number of visit
@@ -101,7 +101,7 @@ class DHHSRP(gym.Env):
             (valid, min_cost_insertion) = self.sched.check_feasible(request, self.current_time, weekly_deadline = True)
             if action == self.REJECT:
                 obs = self.feature_extractor.get_feature(request, self.current_time, min_cost_insertion, is_post_state = True);
-                reward = 0
+                reward = -0.0005
             elif action == self.ACCEPT:
                 self.sched.accept_checked_request(request, min_cost_insertion, weekly_deadline = True)
                 obs = self.feature_extractor.get_feature(request, self.current_time, min_cost_insertion, is_post_state = True);

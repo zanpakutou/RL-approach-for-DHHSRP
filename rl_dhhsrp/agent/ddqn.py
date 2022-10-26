@@ -98,7 +98,7 @@ class DDQNAgent:
             if decision == False:
                 target[0] = reward + self.gamma * t[np.argmax(a)]
                 target[1] = reward + self.gamma * t[np.argmax(a)]
-        self.model.fit(np.array(states), np.array(targets_f), batch_size = batch_size, epochs=1, verbose=0, callbacks=[LearningRateLoggingCallback()])
+        self.model.fit(np.array(states), np.array(targets_f), batch_size = batch_size, epochs=1, verbose=0) #, callbacks=[LearningRateLoggingCallback()])
 
     def load(self, name):
         self.model.load_weights(name)

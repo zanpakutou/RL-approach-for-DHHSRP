@@ -2,8 +2,6 @@
 #SBATCH --array=1
 #SBATCH --job-name=10_11_16
 #SBATCH --time=24:15:00
-#SBATCH -p gpu
-#SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem-per-cpu=2G
 #SBATCH --nodelist=mpu5
@@ -20,7 +18,7 @@ episodes=50000
 batch_size=512
 NN_size=512
 learning_rate=0.000003
-discount_factor=0.995
+discount_factor=0.999
 
 output_folder="${CURRENT_DIR}/${default_config}-${episodes}-${batch_size}-${NN_size}-${learning_rate}-${discount_factor}"
 out_stream="${output_folder}/out.txt"
@@ -30,4 +28,4 @@ mkdir $output_folder
 echo " **** Training ddqn agent ..."
 echo $source_code --output_folder $output_folder --config $default_config --episodes $episodes --batch_size $batch_size --NN_size $NN_size --lr $learning_rate --discount_factor $discount_factor '1>' $out_stream '2>' $err_stream
 python3 $source_code --output_folder $output_folder --config $default_config --episodes $episodes --batch_size $batch_size --NN_size $NN_size --lr $learning_rate --discount_factor $discount_factor 1> $out_stream 2> $err_stream
-echo " **** Done. :))"
+echo " **** Done."

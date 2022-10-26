@@ -15,7 +15,6 @@ import random
 import argparse
 import pathlib
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument('--output_folder', type=str, default=".",
     help='Which folder to write logs and output, generate if not exist')
@@ -145,7 +144,6 @@ if __name__ == "__main__":
                     # Push into the experience replay buffer
                     if week > 3:
                         # State, action, reward, state, decision transition
-                        agent.memorize(pre_state, np.random.randint(2), 0, state, True)
                         agent.memorize(state, action, reward, next_state, True)
                         if verbose and np.random.randint(5) == 0:
                             logger.write_train_log(state, agent.model.predict(state, verbose = 0))

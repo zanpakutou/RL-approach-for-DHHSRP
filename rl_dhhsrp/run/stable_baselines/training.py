@@ -1,10 +1,8 @@
 import os
 
 from stable_baselines3.common.env_checker import check_env
-from stable_baselines3 import A2C, PPO
-from stable_baselines3 import DQN
+from stable_baselines3 import A2C, PPO, DQN
 from stable_baselines3.common.evaluation import evaluate_policy
-from stable_baselines3.common import results_plotter
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.results_plotter import load_results, ts2xy
@@ -73,7 +71,6 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
         return True
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -111,9 +108,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     instance_folder_dict = {
-        0: "../../enviroment/instances/new_instances/uniform/150/",
-        1: "../../enviroment/instances/new_instances/uniform/240/",
-        2: "../../enviroment/instances/new_instances/uniform/360/",
+        0: "../../enviroment/instances/uniform/150/",
+        1: "../../enviroment/instances/uniform/240/",
+        2: "../../enviroment/instances/uniform/360/",
         3: "../../enviroment/instances/simplify/240/",
     }
     instance_folder = instance_folder_dict[args.instance_type]
@@ -138,8 +135,6 @@ if __name__ == "__main__":
         ]
     )
 
-    if args.alg == "DQN":
-        policy_kwargs = dict(net_arch=[args.NN_size, args.NN_size])
     # Define model
     model = None
     model_switcher = {
@@ -152,12 +147,13 @@ if __name__ == "__main__":
             exploration_initial_eps=1,
             gradient_steps=10,
             batch_size=args.batch_size,
-            policy_kwargs=policy_kwargs,
+            policy_kwargs=dict(net_arch=[args.NN_size, args.NN_size]),
         ),
         "PPO": PPO(
             "MlpPolicy", env,
             verbose=args.verbose, learning_rate=args.lr,
             gamma=args.discount_factor, seed=seed,
+            ent_coef=0.3,
             policy_kwargs=policy_kwargs,
         ),
         "A2C": A2C(
@@ -171,7 +167,7 @@ if __name__ == "__main__":
     # Train the agent
     model.learn(args.timesteps, log_interval=2e4, callback=callback)
     # Save the agent
-    model.save(algs.alg + "_dhhsrp_last_model")
+    model.save(args.alg + "_dhhsrp_last_model")
     # model = DQN.load("dqn_dhhcsrp", env=env)
     mean_reward, std_reward = evaluate_policy(model, model.get_env(), n_eval_episodes=5)
     print(mean_reward, std_reward)

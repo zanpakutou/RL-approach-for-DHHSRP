@@ -324,11 +324,16 @@ class Schedule:
                         )
             nurse_travel_time.append(travel_time)
             nurse_workload.append(workload)
-
+        if (self.nb_nurses <= 2):
+            return [
+                sum(nurse_travel_time),
+                sum(nurse_workload),
+            ]
         return [
             sum(nurse_travel_time),
             mean(nurse_travel_time),
             stdev(nurse_travel_time),
+            sum(nurse_workload),
             mean(nurse_workload),
             stdev(nurse_workload),
         ]

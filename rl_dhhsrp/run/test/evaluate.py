@@ -5,7 +5,7 @@ from enviroment.patient_request import PatientRequest, Request
 from enviroment.schedule import Schedule
 from agent.feature_engineering import FeatureExtractor
 from agent.ddqn import DDQNAgent
-from utils.utils import mean, stdev
+# from utils.utils import mean, stdev
 from greedy.greedy import SBA
 from enviroment.patient_generator import PatientGenerator
 from config.config import Config
@@ -13,11 +13,11 @@ from stable_baselines3 import A2C, PPO, DQN
 
 from gym.wrappers import TimeLimit
 from run.stable_baselines.DHHSRPEnvironment import DHHSRP
-import torch
-torch.cuda.is_available = lambda : False
+# import torch
+# torch.cuda.is_available = lambda : False
 
 import csv
-import numpy as np
+# import numpy as np
 import argparse
 
 parser = argparse.ArgumentParser()
@@ -178,8 +178,9 @@ def run_stable_baselines(no: int, model_path = "../stable_baselines/0-5000000-51
 if __name__ == "__main__":
     args = parser.parse_args()
     os.makedirs(args.output_folder, exist_ok=True)
+    print('output folder: ', args.output_folder)
     instance_dir  = "../../enviroment/instances/" + args.instance_type + '/' + str(args.inter_arrival_rate) + "/"
-    print(instance_dir)
+    print('instance dir: ', instance_dir)
 
     results = []
     for no in range(950, 951):

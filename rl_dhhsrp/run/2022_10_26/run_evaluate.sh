@@ -1,14 +1,15 @@
 #!/bin/bash
 #SBATCH --array=1-80
-#SBATCH --job-name=sba_
+#SBATCH --job-name=sba
 #SBATCH --time=30:15:00
 #SBATCH --cpus-per-task=2
-#SBATCH --mem-per-cpu=1G
-#SBATCH --nodelist=mpu5
+#SBATCH --mem-per-cpu=2G
+#SBATCH --account=def-roussea5
 #SBATCH --mail-user=phamtusan@gmail.com
-#SBATCH --output=/ssd6/san/software/RL-approach-for-DHHSRP/rl_dhhsrp/run/log/%x_%a.out
+#SBATCH --mail-type=ALL
+#SBATCH --output=/home/tusan/projects/def-roussea5/tusan/software/RL-approach-for-DHHSRP/rl_dhhsrp/run/2022_10_26/log/%x_%a.out
 
-parent_dir='/ssd6/san/software/RL-approach-for-DHHSRP'
+parent_dir='/home/tusan/projects/def-roussea5/tusan/software/RL-approach-for-DHHSRP'
 #parent_dir="../../../"
 source ${parent_dir}/.env/bin/activate
 source_code="${parent_dir}/rl_dhhsrp/run/test/evaluate.py"

@@ -4,17 +4,15 @@ Reinforcement learning approach for Dynamic Home Health Care Scheduling and Rout
 
     .
     ├── agent                   <- RL agent
-    ├── enviroment
-    │   ├── test                
-    │   ├── train               
-    │   └── unit                
+    ├── enviroment             	<- Instances and scheduling classes
     ├── greedy                  <- Code for greedy algorithm(s)
-    ├── save                    <- Pretrain model
-    ├── training.py
-    └── evaluate.py
+    ├── utils                    
+    └── run			<- Code for DDQN, SB, test...
 ## Setup
 ### Install enviroment
-```
+```cd 
+python3.8 -m venv .env
+source .env/bin/activate
 pip install -r requirements.txt
 ```
 ### Training

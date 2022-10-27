@@ -6,6 +6,7 @@ from enviroment.patient_request import PatientRequest, Request
 from enviroment.schedule import Schedule
 from agent.feature_engineering import FeatureExtractor
 from agent.ddqn import DDQNAgent
+# from utils.utils import mean, stdev
 from greedy.greedy import SBA
 from enviroment.patient_generator import PatientGenerator
 from config.config import Config
@@ -13,9 +14,11 @@ from stable_baselines3 import A2C, PPO, DQN
 
 from gym.wrappers import TimeLimit
 from run.stable_baselines.DHHSRPEnvironment import DHHSRP
-
+# import torch
+# torch.cuda.is_available = lambda : False
 
 import csv
+# import numpy as np
 import argparse
 import time
 

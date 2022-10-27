@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --array=1-112
 #SBATCH --job-name=ddqn
-#SBATCH --time=120:00:00
+#SBATCH --time=144:00:00
 #SBATCH --cpus-per-task=2
-#SBATCH --mem-per-cpu=6G
+#SBATCH --mem-per-cpu=5G
 #SBATCH --account=def-roussea5
 #SBATCH --mail-user=phamtusan@gmail.com
 #SBATCH --mail-type=ALL
@@ -13,7 +13,7 @@ parent_dir='/home/tusan/projects/def-roussea5/tusan/software/RL-approach-for-DHH
 #parent_dir='../../../'
 source_code="${parent_dir}/rl_dhhsrp/run/ddqn/training_ddqn.py"
 CURRENT_DIR="${parent_dir}/rl_dhhsrp/run/2022_10_27/"
-. ${parent_dir}/env/bin/activate
+source ${parent_dir}/.env/bin/activate
 
 c=${SLURM_ARRAY_TASK_ID}
 setting=$(sed -n "${c}p" listSettingDDQN.txt)

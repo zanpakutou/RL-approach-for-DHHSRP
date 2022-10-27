@@ -251,11 +251,11 @@ class Schedule:
         return (False, min_cost_insertion)
 
     def accept_request(
-        self, request, current_time, spec_nurse=-1, weekly_deadline=False
+        self, request, current_time, spec_nurse=-1, weekly_deadline=False, capacity_heur = False
     ):
         """Update the planned routes after accept the request"""
         (ok, min_cost_insertion) = self.check_feasible(
-            request, current_time, spec_nurse, weekly_deadline=weekly_deadline
+            request, current_time, spec_nurse, weekly_deadline=weekly_deadline, capacity_heur = capacity_heur
         )
         if ok == False:
             return False

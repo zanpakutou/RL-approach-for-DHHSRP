@@ -100,11 +100,15 @@ class DHHSRP(gym.Env):
             request = self.requests[week][day][index];
             (valid, min_cost_insertion) = self.sched.check_feasible(request, self.current_time, weekly_deadline = True)
             if action == self.REJECT:
-                obs = self.feature_extractor.get_feature(request, self.current_time, min_cost_insertion, is_post_state = True);
-                reward = -0.0005
+                self.current_time, self.request_position, next_request = self.find_next_valid_request(self.request_position)
+                (valid, min_cost_insertion) = self.sched.check_feasible(next_request, self.current_time, weekly_deadline = True)
+                obs = self.feature_extractor.get_feature(next_request, self.current_time, min_cost_insertion);
+                reward = 0
             elif action == self.ACCEPT:
                 self.sched.accept_checked_request(request, min_cost_insertion, weekly_deadline = True)
-                obs = self.feature_extractor.get_feature(request, self.current_time, min_cost_insertion, is_post_state = True);
+                self.current_time, self.request_position, next_request = self.find_next_valid_request(self.request_position)
+                (valid, min_cost_insertion) = self.sched.check_feasible(next_request, self.current_time, weekly_deadline = True)
+                obs = self.feature_extractor.get_feature(next_request, self.current_time, min_cost_insertion);
                 reward = 0.01
                 if (self.reward_type == 1):
                         reward = request.require_time[0] * request.require_time[1] / 200
@@ -112,7 +116,6 @@ class DHHSRP(gym.Env):
                 raise ValueError("Received invalid action={} which is not part of the action space".format(action))
             self.is_post_state = True
         
-
         return obs, reward, done, infor
 
     def render(self, mode='console'):

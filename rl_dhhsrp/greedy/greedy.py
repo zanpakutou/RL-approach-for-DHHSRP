@@ -19,11 +19,12 @@ def most_frequent(List):
 
 
 class SBA:
-    def __init__(self, schedule, patient_generator, num_scen=15, scen_size=20):
+    def __init__(self, schedule, patient_generator, capacity_heur=False, num_scen=15, scen_size=20):
         self.sched = schedule
         self.pat_generator = patient_generator
         self.nb_scenarios = num_scen
         self.avg_request = scen_size
+        self.capacity_heur = capacity_heur
 
     def act(self, request, current_time):
         is_accepted = False

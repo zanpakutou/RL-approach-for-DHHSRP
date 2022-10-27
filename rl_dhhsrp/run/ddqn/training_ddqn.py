@@ -33,6 +33,22 @@ parser.add_argument('--lr', type=float, default=1e-6,
 parser.add_argument('--obj', type=str, default='patient', 
     choices=['patient', 'visit'],
     help='patient: maximize number of patient. visit: maximize number of visit')
+parser.add_argument('--instance_type', type=str, default='uniform',
+    choices=['uniform', 'cluster', 'simplify'],
+    help='Type of instance')
+parser.add_argument('--arr_rate', type=int, default=360,
+    choices=[150, 240, 360, 60],
+    help='Arrival rate')
+parser.add_argument('--transition_type', type=str, default='partial',
+    choices=['partial', 'full'],
+    help='Transition type')
+
+def _reward(obj: str, request: Request):
+    if args.obj == "visit":
+        return request.require_time[0] * request.require_time[1]
+    elif args.obj == "patient":
+        return 1
+    return None
 
 def evaluate(id):
     env = PatientRequest()
@@ -69,20 +85,16 @@ def evaluate(id):
                         ans = ans + 1
     return ans
 
-
 if __name__ == "__main__":
     args = parser.parse_args()
     os.makedirs(args.output_folder, exist_ok=True)
     os.makedirs(args.output_folder + "/save", exist_ok=True)
     config = Config(batch_size = args.batch_size, discount_factor = args.discount_factor, num_hiddens = args.NN_size,\
-                    learning_rate = args.lr, num_episodes = args.episodes).get_configs()[args.config]
+                    learning_rate = args.lr, num_episodes = args.episodes, instance_type= args.instance_type, arr_rate = args.arr_rate).get_configs()[args.config]
     instance_dir = config.instances_dir
-
     set_seed(config.seed)
     batch_size = config.batch_size
     total_episodes = int(config.num_episodes)
-    state_size = config.state_size
-    action_size = config.action_size
     agent = DDQNAgent(config)
     logger = Logger(args.output_folder)
     replay_count = 0
@@ -129,13 +141,9 @@ if __name__ == "__main__":
                             request, min_cost_insertion,
                             current_time, weekly_deadline=True,
                         )
-                        reward = 0.01
-                        
-                        if (args.obj == 'visit'):
-                            reward = request.require_time[0] * request.require_time[1]/ 200
-                            score = score + request.require_time[0] * request.require_time[1]
-                        else:
-                            score = score + 1 
+                        reward = _reward(args.obj, request) / 100
+                        score = score + _reward(args.obj, request)
+
                     # Calculate next state
                     next_state = feature_extractor.get_feature(
                         request, current_time, min_cost_insertion, is_post_state=True
@@ -144,6 +152,8 @@ if __name__ == "__main__":
                     # Push into the experience replay buffer
                     if week > 3:
                         # State, action, reward, state, decision transition
+                        if (args.transition_type == 'full'):
+                            agent.memorize(pre_state, np.random.randint(2), 0, state, True)
                         agent.memorize(state, action, reward, next_state, True)
                         if verbose and np.random.randint(5) == 0:
                             logger.write_train_log(state, agent.model.predict(state, verbose = 0))
@@ -171,8 +181,7 @@ if __name__ == "__main__":
             logger.write_test_log(e, score)
             agent.save(
                 args.output_folder + "/save/dhhsrp-ddqn-"
-                + str(int(np.floor(test_res))) + "-"
-                + str(agent.epsilon)   + ".h5"
+                + str(int(np.floor(test_res))) + ".h5"
             )
 
         if verbose:

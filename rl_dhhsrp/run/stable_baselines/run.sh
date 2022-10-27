@@ -16,11 +16,11 @@ CURRENT_DIR="${parent_dir}/rl_dhhsrp/run/stable_baselines/"
 #Parameter
 instance_type=0 #inter arrival rate: 0-> 150, 1->240, 2->360, 3-> simplify instances
 time_steps=2000000
-batch_size=512 #only for dqn
-NN_size=216
+batch_size=256 #only for dqn
+NN_size=256
 learning_rate=0.0003
 discount_factor=0.999
-alg=DQN #DQN, A2C, PPO
+alg=PPO #DQN, A2C, PPO
 obj=patient
 
 output_folder="${CURRENT_DIR}/${instance_type}-${time_steps}-${batch_size}-${NN_size}-${learning_rate}-${discount_factor}-${obj}-${alg}"

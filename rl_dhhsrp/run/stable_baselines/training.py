@@ -1,5 +1,4 @@
 import os
-
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3 import A2C, PPO, DQN
 from stable_baselines3.common.evaluation import evaluate_policy
@@ -12,8 +11,10 @@ from DHHSRPEnvironment import DHHSRP
 
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
 import argparse
 
+torch.cuda.is_available = lambda : False
 def moving_average(values, window):
     weights = np.repeat(1.0, window) / window
     return np.convolve(values, weights, "valid")
@@ -145,7 +146,9 @@ if __name__ == "__main__":
             gamma=args.discount_factor, seed=seed,
             exploration_fraction=0.33,
             exploration_initial_eps=1,
-            gradient_steps=10,
+            exploration_final_eps=0.05,
+            train_freq=50,
+            gradient_steps=-1,
             batch_size=args.batch_size,
             policy_kwargs=dict(net_arch=[args.NN_size, args.NN_size]),
         ),
@@ -153,13 +156,14 @@ if __name__ == "__main__":
             "MlpPolicy", env,
             verbose=args.verbose, learning_rate=args.lr,
             gamma=args.discount_factor, seed=seed,
-            ent_coef=0.3,
+            ent_coef=0.05,
             policy_kwargs=policy_kwargs,
         ),
         "A2C": A2C(
             "MlpPolicy", env,
             verbose=args.verbose, learning_rate=args.lr,
             gamma=args.discount_factor, seed=seed,
+            ent_coef=0.03,
             policy_kwargs=policy_kwargs,
             )
     }
@@ -167,7 +171,7 @@ if __name__ == "__main__":
     # Train the agent
     model.learn(args.timesteps, log_interval=2e4, callback=callback)
     # Save the agent
-    model.save(args.alg + "_dhhsrp_last_model")
+    model.save(log_dir + '/' + args.alg + "_dhhsrp_last_model")
     # model = DQN.load("dqn_dhhcsrp", env=env)
     mean_reward, std_reward = evaluate_policy(model, model.get_env(), n_eval_episodes=5)
     print(mean_reward, std_reward)

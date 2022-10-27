@@ -36,15 +36,15 @@ class FeatureExtractor:
                         total_travel_time[nurse] = total_travel_time[nurse] + travel_time
                         prev_visit = visit
                     
-            total_travel_time[nurse] = total_travel_time[nurse] / (total_time)
+            total_travel_time[nurse] = 3 * total_travel_time[nurse] / (total_time)
             total_idle_time_avai[nurse] = total_idle_time_avai[nurse] / (total_time)
             future_visit[nurse] = future_visit[nurse] / (self.env.day_per_week * self.env.max_required_week * working_hours)
         # Location & Eligibility
         cheapest_insertion_cost = 0
         if (capacity_heur == False):
-            cheapest_insertion_cost = min_cost_insertion[0][0] / (80 * sqrt(2) * self.env.max_day_per_week * self.env.max_required_week)
+            cheapest_insertion_cost =  min_cost_insertion[0][0] / (80 * sqrt(2) * self.env.max_day_per_week * self.env.max_required_week)
         else :
-            cheapest_insertion_cost = min_cost_insertion[0][3] / (80 * sqrt(2) * self.env.max_day_per_week * self.env.max_required_week)
+            cheapest_insertion_cost =  min_cost_insertion[0][3] / (80 * sqrt(2) * self.env.max_day_per_week * self.env.max_required_week)
 
         request_info = [request.require_time[0] / self.env.max_required_week, \
             request.require_time[1] / self.env.max_day_per_week, \

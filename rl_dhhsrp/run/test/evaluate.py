@@ -277,7 +277,7 @@ if __name__ == "__main__":
     print('instance dir: ', instance_dir)
 
     results = []
-    for no in range(950, 999):
+    for no in range(950, 969):
         print(no)
         stat_DH = run_DH_greedy(no)
         stat_CH = run_CH_greedy(no)
@@ -298,6 +298,7 @@ if __name__ == "__main__":
         + str(args.instance_type)
         + "_" + str(args.inter_arrival_rate)
         + "_" + str(args.nb_scenario)
+        + "_" + str(args.obj)
         + ".csv", "w",
         newline="", encoding="utf-8",
     ) as f:

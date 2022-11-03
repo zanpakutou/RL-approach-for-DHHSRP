@@ -40,5 +40,5 @@ mkdir -p $output_folder
 echo " **** Training ddqn agent ..."
 echo $source_code --episodes $episodes --batch_size $batch_size --NN_size $NN_size --discount_factor $discount_factor --output_folder ${output_folder} --config 0 --lr ${lr} --obj ${obj} --arr_rate ${arr_rate} --transition_type ${transition_type}
 
-python3 $source_code --episodes $episodes --batch_size $batch_size --NN_size $NN_size --discount_factor $discount_factor --output_folder ${output_folder} --config 0 --lr ${lr} --obj ${obj} --arr_rate ${arr_rate} --transition_type ${transition_type} 1> $out_stream 2> $err_stream
+python3 $source_code --episodes $episodes --batch_size $batch_size --NN_size $NN_size --discount_factor $discount_factor --output_folder ${output_folder} --config 0 --lr ${lr} --obj ${obj} --instance_type ${instance_type} --arr_rate ${arr_rate} --transition_type ${transition_type} 1> $out_stream 2> $err_stream
 echo " **** Done."

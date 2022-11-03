@@ -9,7 +9,10 @@ from keras import backend as K
 import tensorflow as tf
 
 from utils.logger import Logger
+
+
 tf.config.set_visible_devices([], 'GPU')
+tf.config.run_functions_eagerly(False)
 
 class LearningRateLoggingCallback(tf.keras.callbacks.Callback):
       def on_epoch_end(self, epoch, logs = None):
@@ -28,6 +31,7 @@ class DDQNAgent:
         self.epsilon_min = config.epsilon_min
         self.epsilon_decay = config.epsilon_decay
         self.learning_rate = config.learning_rate
+        self.optimizer = Adam(learning_rate=self.learning_rate)
         self.model = self._build_model()
         self.target_model = self._build_model()
         self.update_target_model()
@@ -45,7 +49,7 @@ class DDQNAgent:
         # Neural Net for Deep-Q learning Model
         initializer = tf.keras.initializers.VarianceScaling(scale=2.0, mode='fan_in', distribution='truncated_normal')
         model = Sequential()
-        model.add(Dense(nb_node, input_dim=self.state_size, activation='relu', kernel_initializer = initializer))
+        model.add(Dense(nb_node, input_shape=(self.state_size,), activation='relu', kernel_initializer = initializer))
         for _ in range(nb_layers - 1):
             model.add(Dense(nb_node//2,  activation='relu', kernel_initializer = initializer))
 
@@ -61,7 +65,7 @@ class DDQNAgent:
         )
         
         model.compile(loss=self._huber_loss,
-                      optimizer=Adam(learning_rate=self.learning_rate))
+                      optimizer= self.optimizer)
         return model
 
     def update_target_model(self):
@@ -98,7 +102,15 @@ class DDQNAgent:
             if decision == False:
                 target[0] = reward + self.gamma * t[np.argmax(a)]
                 target[1] = reward + self.gamma * t[np.argmax(a)]
-        self.model.fit(np.array(states), np.array(targets_f), batch_size = batch_size, epochs=1, verbose=0) #, callbacks=[LearningRateLoggingCallback()])
+        #self.model.fit(np.array(states), np.array(targets_f), batch_size = batch_size, epochs=1, verbose=0) #, callbacks=[LearningRateLoggingCallback()])
+
+        with tf.GradientTape() as tape:
+            predictions = self.model(np.array(states), training=True)
+            loss_value = self._huber_loss(targets_f, predictions)
+
+        gradients = tape.gradient(loss_value, self.model.trainable_variables)
+        self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
+        return loss_value
 
     def load(self, name):
         self.model.load_weights(name)

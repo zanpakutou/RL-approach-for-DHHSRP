@@ -7,7 +7,7 @@ class FeatureExtractor:
     def __init__(self, env, schedule):
         self.env = env
         self.schedule = schedule
-    def get_feature(self, request, current_time, min_cost_insertion, is_post_state = False, capacity_heur = False):
+    def get_feature(self, request, current_time, min_cost_insertion, is_post_state = False, capacity_heur = False, valid = True):
         max_consider_week = self.env.max_required_week;
         total_time = ((self.env.working_tw[1] - self.env.working_tw[0]) * self.env.day_per_week * max_consider_week)
         working_hours = (self.env.working_tw[1] - self.env.working_tw[0])//60
@@ -51,14 +51,17 @@ class FeatureExtractor:
             request.require_time[2] / self.env.max_required_hour
         ]
         next_nurses[min_cost_insertion[1]] = 1
+        if valid == False:
+            cheapest_insertion_cost = 1
         if (is_post_state):
             cheapest_insertion_cost = 0
             request_info = [0, 0, 0]
             next_nurses[min_cost_insertion[1]] = 0
-            
+            valid = False
+        
         remaining_time = 1 - (current_time[1] * 24 * 60 + current_time[2])/(self.env.day_per_week * 24 * 60)
         
         features = request_info + [cheapest_insertion_cost] + [remaining_time] + \
-            next_nurses + future_visit + [is_post_state] +\
+            next_nurses + future_visit + [is_post_state] + [valid] +\
             total_idle_time_avai + total_travel_time
         return np.reshape(features, [1, len(features)])

@@ -14,6 +14,7 @@ import numpy as np
 import random
 import argparse
 import pathlib
+import gc
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--output_folder', type=str, default=".",
@@ -122,19 +123,19 @@ if __name__ == "__main__":
                     (valid, min_cost_insertion) = sched.check_feasible(
                         request, current_time, weekly_deadline=True
                     )
-                    if valid == False:
-                        continue
+                    #if valid == False:
+                    #    continue
                     # Calculatint state
                     pre_state = next_state
                     state = feature_extractor.get_feature(
-                        request, current_time, min_cost_insertion
+                        request=request, current_time=current_time, min_cost_insertion=min_cost_insertion, valid=valid
                     )
 
                     # Derive action
                     action = agent.act(state)
 
                     # Calculate reward
-                    if action == 0 and week > 3:
+                    if (action == 0 and week > 3) or valid == False:
                         reward = 0
                     else:
                         sched.accept_checked_request(
@@ -178,7 +179,7 @@ if __name__ == "__main__":
                 test_res = test_res + evaluate(test)
             test_res = test_res / len(config.test_instances)
             print("test: {}".format(test_res), flush = True)
-            logger.write_test_log(e, score)
+            logger.write_test_log(e, test_res)
             agent.save(
                 args.output_folder + "/save/dhhsrp-ddqn-"
                 + str(int(np.floor(test_res))) + ".h5"
@@ -195,4 +196,6 @@ if __name__ == "__main__":
         if agent.epsilon > agent.epsilon_min:
             agent.epsilon *= agent.epsilon_decay
         logger.flush_log()
+        gc.collect()
+
 logger.close_log()

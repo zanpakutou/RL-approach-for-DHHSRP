@@ -225,7 +225,7 @@ def run_RL(no: int, model_path="../base/save/test.h5"):
 
 def run_stable_baselines(
     no: int,
-    model_path="../stable_baselines/0-2000000-256-256-0.0003-0.999-patient-DQN/DQN_model",
+    model_path="../stable_baselines/DQN/DQN_model",
 ):
     config = Config()
     env_type = TimeLimit(DHHSRP(instance_dir, reward_type=0), max_episode_steps=2000)
@@ -277,7 +277,7 @@ if __name__ == "__main__":
     print('instance dir: ', instance_dir)
 
     results = []
-    for no in range(950, 999):
+    for no in range(950, 956):
         print(no)
         stat_DH = run_DH_greedy(no)
         stat_CH = run_CH_greedy(no)
@@ -298,6 +298,7 @@ if __name__ == "__main__":
         + str(args.instance_type)
         + "_" + str(args.inter_arrival_rate)
         + "_" + str(args.nb_scenario)
+        + "_" + str(args.obj)
         + ".csv", "w",
         newline="", encoding="utf-8",
     ) as f:

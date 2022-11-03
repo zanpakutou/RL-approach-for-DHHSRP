@@ -7,13 +7,13 @@
 #SBATCH --account=def-roussea5
 #SBATCH --mail-user=phamtusan@gmail.com
 #SBATCH --mail-type=ALL
-#SBATCH --output=/home/tusan/projects/def-roussea5/tusan/software/RL-approach-for-DHHSRP/rl_dhhsrp/run/2022_10_27/log/%x_%a.out
+#SBATCH --output=/home/tusan/projects/def-roussea5/tusan/software/RL-approach-for-DHHSRP/rl_dhhsrp/run/2022_11_04/log/%x_%a.out
 
 parent_dir='/home/tusan/projects/def-roussea5/tusan/software/RL-approach-for-DHHSRP'
 #parent_dir="../../../"
 source ${parent_dir}/.env/bin/activate
 source_code="${parent_dir}/rl_dhhsrp/run/test/evaluate.py"
-CURRENT_DIR="${parent_dir}/rl_dhhsrp/run/experiments/2022_10_27"
+CURRENT_DIR="${parent_dir}/rl_dhhsrp/run/experiments/2022_11_04"
 output_folder="${CURRENT_DIR}/sba/"
 #mkdir $output_folder
 c=${SLURM_ARRAY_TASK_ID}

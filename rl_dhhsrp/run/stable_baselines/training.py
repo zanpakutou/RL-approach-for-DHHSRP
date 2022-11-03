@@ -75,7 +75,14 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--instance_type", type=int, default=2, help="Which folder to read input from"
+        "--instance_type", type=str, default='uniform',
+        choices=['uniform', 'cluster', 'simplify'],
+        help="Type of instances",
+    )
+     parser.add_argument(
+        "--arr_rate", type=int, default=360,
+        choices=[150, 240, 360],
+        help="Type of instances",
     )
     parser.add_argument(
         "--output_folder", type=str, default=".",
@@ -98,31 +105,28 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--obj", type=str, default="patient",
+        choices=['patient', 'visit'],
         help="patient: maximize number of patient. visit: maximize number of visit",
     )
     parser.add_argument(
-        "--alg", type=str, default="DQN", help="Name of algorithm to use"
+        "--alg", type=str, default="DQN", 
+        choices=["DQN", "A2C", "PPO"],
+        help="Name of algorithm to use"
     )
     parser.add_argument(
         "--verbose", type=int, default=1, help="Print log of training process or not"
     )
+    
     args = parser.parse_args()
 
-    instance_folder_dict = {
-        0: "../../enviroment/instances/uniform/150/",
-        1: "../../enviroment/instances/uniform/240/",
-        2: "../../enviroment/instances/uniform/360/",
-        3: "../../enviroment/instances/simplify/240/",
-    }
-    instance_folder = instance_folder_dict[args.instance_type]
+    instance_folder = "../../enviroment/instances/" + args.instance_type + '/' + str(args.arr_rate) + '/'
 
     seed = 0
     log_dir = args.output_folder
     os.makedirs(log_dir, exist_ok=True)
 
-    obj_type = args.obj == "visit"
     env = TimeLimit(
-        DHHSRP(instance_folder, reward_type=obj_type), max_episode_steps=2000
+        DHHSRP(instance_folder, reward_type=args.obj), max_episode_steps=5000
     )
     env = Monitor(env, log_dir)
     check_env(env, warn=True)
@@ -144,10 +148,11 @@ if __name__ == "__main__":
             verbose=args.verbose,
             learning_rate=args.lr,
             gamma=args.discount_factor, seed=seed,
-            exploration_fraction=0.33,
+            learning_starts=0,
+            exploration_fraction=0.2,
             exploration_initial_eps=1,
             exploration_final_eps=0.05,
-            train_freq=50,
+            train_freq=10,
             gradient_steps=-1,
             batch_size=args.batch_size,
             policy_kwargs=dict(net_arch=[args.NN_size, args.NN_size]),
@@ -156,20 +161,21 @@ if __name__ == "__main__":
             "MlpPolicy", env,
             verbose=args.verbose, learning_rate=args.lr,
             gamma=args.discount_factor, seed=seed,
-            ent_coef=0.05,
+            ent_coef=0.01,
             policy_kwargs=policy_kwargs,
         ),
         "A2C": A2C(
             "MlpPolicy", env,
             verbose=args.verbose, learning_rate=args.lr,
             gamma=args.discount_factor, seed=seed,
-            ent_coef=0.03,
+            ent_coef=0.01,
+            normalize_advantage=True,
             policy_kwargs=policy_kwargs,
             )
     }
     model = model_switcher[args.alg]
     # Train the agent
-    model.learn(args.timesteps, log_interval=2e4, callback=callback)
+    #model.learn(args.timesteps, log_interval=2e4, callback=callback)
     # Save the agent
     model.save(log_dir + '/' + args.alg + "_dhhsrp_last_model")
     # model = DQN.load("dqn_dhhcsrp", env=env)

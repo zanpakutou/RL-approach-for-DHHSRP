@@ -1,76 +1,24 @@
 import os
-from stable_baselines3.common.env_checker import check_env
-from stable_baselines3 import A2C, PPO, DQN
-from stable_baselines3.common.evaluation import evaluate_policy
-from stable_baselines3.common.callbacks import BaseCallback
-from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.results_plotter import load_results, ts2xy
+from stable_baselines.common.env_checker import check_env
+from stable_baselines import A2C, DQN
+from stable_baselines.common.evaluation import evaluate_policy
+from stable_baselines.deepq.policies import FeedForwardPolicy
+from stable_baselines.common.vec_env import DummyVecEnv
+from stable_baselines.bench.monitor import Monitor
 
 from gym.wrappers import TimeLimit
 from DHHSRPEnvironment import DHHSRP
+from callbacks import SaveOnBestTrainingRewardCallback, SaveTestCallback, plot_results
 
-import matplotlib.pyplot as plt
 import numpy as np
-import torch
 import argparse
 
-torch.cuda.is_available = lambda : False
-def moving_average(values, window):
-    weights = np.repeat(1.0, window) / window
-    return np.convolve(values, weights, "valid")
-
-def plot_results(log_folder, title="Learning Curve"):
-    x, y = ts2xy(load_results(log_folder), "timesteps")
-    print(x)
-    print(y)
-    # y = moving_average(y, window=50)
-    # Truncate x
-    x = x[len(x) - len(y) :]
-
-    fig = plt.figure(title)
-    plt.plot(x, y)
-    plt.xlabel("Number of Timesteps")
-    plt.ylabel("Rewards")
-    plt.title(title + " Smoothed")
-    plt.show()
-    fig.savefig(log_folder + "/log.jpg")
-
-class SaveOnBestTrainingRewardCallback(BaseCallback):
-    def __init__(self, check_freq: int, log_dir: str, filename : str, verbose=1):
-        super(SaveOnBestTrainingRewardCallback, self).__init__(verbose)
-        self.check_freq = check_freq
-        self.log_dir = log_dir
-        self.save_path = os.path.join(log_dir, filename)
-        self.best_mean_reward = -np.inf
-
-    def _init_callback(self) -> None:
-        # Create folder if needed
-        if self.save_path is not None:
-            os.makedirs(self.log_dir, exist_ok=True)
-
-    def _on_step(self) -> bool:
-        if self.n_calls % self.check_freq == 0:
-
-            # Retrieve training reward
-            x, y = ts2xy(load_results(self.log_dir), "timesteps")
-            if len(x) > 0:
-                # Mean training reward over the last 100 episodes
-                mean_reward = np.mean(y[-100:])
-                if self.verbose > 0:
-                    print(f"Num timesteps: {self.num_timesteps}")
-                    print(
-                        f"Best mean reward: {self.best_mean_reward:.2f} - Last mean reward per episode: {mean_reward:.2f}"
-                    )
-
-                # New best model, you could save the agent here
-                if mean_reward > self.best_mean_reward:
-                    self.best_mean_reward = mean_reward
-                    # Example for saving best model
-                    if self.verbose > 0:
-                        print(f"Saving new best model to {self.save_path}.zip")
-                    self.model.save(self.save_path)
-
-        return True
+class CustomDQNPolicy(FeedForwardPolicy):
+    def __init__(self, *args, **kwargs):
+        super(CustomDQNPolicy, self).__init__(*args, **kwargs,
+                                           layers=[256, 256],
+                                           layer_norm=False,
+                                           feature_extraction="mlp")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -79,7 +27,7 @@ if __name__ == "__main__":
         choices=['uniform', 'cluster', 'simplify'],
         help="Type of instances",
     )
-     parser.add_argument(
+    parser.add_argument(
         "--arr_rate", type=int, default=360,
         choices=[150, 240, 360],
         help="Type of instances",
@@ -98,7 +46,7 @@ if __name__ == "__main__":
         "--discount_factor", type=float, default=0.99, help="Discount factor."
     )
     parser.add_argument(
-        "--NN_size", type=int, default=128, help="Size of each hidden layer"
+        "--NN_size", type=int, default=256, help="Size of each hidden layer"
     )
     parser.add_argument(
         "--lr", type=float, default=1e-5, help="Learning rate of deep Q network"
@@ -126,59 +74,36 @@ if __name__ == "__main__":
     os.makedirs(log_dir, exist_ok=True)
 
     env = TimeLimit(
-        DHHSRP(instance_folder, reward_type=args.obj), max_episode_steps=5000
+        DHHSRP(instance_folder, reward_type=args.obj, cap_heur = False), max_episode_steps=5000
     )
     env = Monitor(env, log_dir)
     check_env(env, warn=True)
 
-    # Instantiate the agent
-    callback = SaveOnBestTrainingRewardCallback(check_freq=5e3, log_dir=log_dir, filename=args.alg + "_model")
-    # Neural net architechture
-    policy_kwargs = dict(
-        net_arch=[
-            dict(pi=[args.NN_size, args.NN_size], vf=[args.NN_size, args.NN_size])
-        ]
-    )
-
     # Define model
-    model = None
-    model_switcher = {
-        "DQN": DQN(
-            "MlpPolicy", env,
+    model = DQN(
+            CustomDQNPolicy,
+            env,
             verbose=args.verbose,
             learning_rate=args.lr,
             gamma=args.discount_factor, seed=seed,
             learning_starts=0,
-            exploration_fraction=0.2,
+            exploration_fraction=0.3,
             exploration_initial_eps=1,
             exploration_final_eps=0.05,
-            train_freq=10,
-            gradient_steps=-1,
+            train_freq=20,
+            target_network_update_freq=2000,
             batch_size=args.batch_size,
-            policy_kwargs=dict(net_arch=[args.NN_size, args.NN_size]),
-        ),
-        "PPO": PPO(
-            "MlpPolicy", env,
-            verbose=args.verbose, learning_rate=args.lr,
-            gamma=args.discount_factor, seed=seed,
-            ent_coef=0.01,
-            policy_kwargs=policy_kwargs,
-        ),
-        "A2C": A2C(
-            "MlpPolicy", env,
-            verbose=args.verbose, learning_rate=args.lr,
-            gamma=args.discount_factor, seed=seed,
-            ent_coef=0.01,
-            normalize_advantage=True,
-            policy_kwargs=policy_kwargs,
-            )
-    }
-    model = model_switcher[args.alg]
+            policy_kwargs=dict(dueling=False)
+        )
+
+    # Callbacks
+    callback_train = SaveOnBestTrainingRewardCallback(check_freq=5e3, log_dir=log_dir, filename="DQN_model")
+    callback_test = SaveTestCallback(check_freq=2e4, log_dir=log_dir, filename="DQN_model", instance_dir=instance_folder)
     # Train the agent
-    #model.learn(args.timesteps, log_interval=2e4, callback=callback)
+    model.learn(args.timesteps, log_interval=2e4, callback=[callback_train, callback_test])
     # Save the agent
     model.save(log_dir + '/' + args.alg + "_dhhsrp_last_model")
-    # model = DQN.load("dqn_dhhcsrp", env=env)
+
     mean_reward, std_reward = evaluate_policy(model, model.get_env(), n_eval_episodes=5)
     print(mean_reward, std_reward)
     plot_results(log_dir, title=args.alg + " Learning Curve")

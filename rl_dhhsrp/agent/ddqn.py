@@ -4,15 +4,14 @@ from collections import deque
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.initializers import HeNormal
-from keras import backend as K
+from tensorflow.keras import backend as K
 import tensorflow as tf
 
 from utils.logger import Logger
 
 
-tf.config.set_visible_devices([], 'GPU')
-tf.config.run_functions_eagerly(False)
+#tf.config.set_visible_devices([], 'GPU')
+#tf.config.run_functions_eagerly(False)
 
 class LearningRateLoggingCallback(tf.keras.callbacks.Callback):
       def on_epoch_end(self, epoch, logs = None):

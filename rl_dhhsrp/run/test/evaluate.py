@@ -10,7 +10,7 @@ from agent.ddqn import DDQNAgent
 from greedy.greedy import SBA
 from enviroment.patient_generator import PatientGenerator
 from config.config import Config
-from stable_baselines3 import A2C, PPO, DQN
+from stable_baselines import DQN
 
 from gym.wrappers import TimeLimit
 from run.stable_baselines.DHHSRPEnvironment import DHHSRP
@@ -37,7 +37,7 @@ parser.add_argument(
     help="Which folder of customer request need to be run",
 )
 parser.add_argument(
-    "--inter_arrival_rate",
+    "--arr_rate",
     type=int,
     default=360,
     choices=[60, 150, 240, 360],
@@ -91,7 +91,7 @@ def run_DH_greedy(no: int):
     print(
         "DH schedule \t" + str(ans_greedy) + " per " + str(total_request) + " requests"
     )
-    return sched.get_metrics() + [ans_greedy, ans_greedy / total_request]
+    return [ans_greedy, ans_greedy / total_request]
 
 
 def run_CH_greedy(no: int):
@@ -122,7 +122,7 @@ def run_CH_greedy(no: int):
         + str(total_request)
         + " requests"
     )
-    return sched.get_metrics() + [ans_greedy_cap, ans_greedy_cap / total_request]
+    return  [ans_greedy_cap, ans_greedy_cap / total_request]
 
 
 def run_SBA_greedy(
@@ -220,12 +220,12 @@ def run_RL(no: int, model_path="../base/save/test.h5"):
                         ans_rl = ans_rl + reward(args.obj, request)
 
     print("RL schedule \t" + str(ans_rl) + " per " + str(total_request) + " requests")
-    return sched.get_metrics() + [ans_rl, ans_rl / total_request]
+    return  [ans_rl, ans_rl / total_request]
 
 
 def run_stable_baselines(
     no: int,
-    model_path="../stable_baselines/DQN/DQN_model",
+    model_path="../stable_baselines/DQN_240/DQN_model_387.0",
 ):
     config = Config()
     env_type = TimeLimit(DHHSRP(instance_dir, reward_type=0), max_episode_steps=2000)
@@ -260,7 +260,7 @@ def run_stable_baselines(
                         ans_rl = ans_rl + reward(args.obj, request)
 
     print("RL schedule \t" + str(ans_rl) + " per " + str(total_request) + " requests")
-    return sched.get_metrics() + [ans_rl, ans_rl / total_request]
+    return [ans_rl, ans_rl / total_request]
 
 
 if __name__ == "__main__":
@@ -271,7 +271,7 @@ if __name__ == "__main__":
         "../../enviroment/instances/"
         + args.instance_type
         + "/"
-        + str(args.inter_arrival_rate)
+        + str(args.arr_rate)
         + "/"
     )
     print('instance dir: ', instance_dir)
@@ -281,22 +281,22 @@ if __name__ == "__main__":
         print(no)
         stat_DH = run_DH_greedy(no)
         stat_CH = run_CH_greedy(no)
-        stat_SBA_DH = run_SBA_greedy(
-            no, nb_scen=args.nb_scenario, inter_arrival_rate=args.inter_arrival_rate
+        '''stat_SBA_DH = run_SBA_greedy(
+            no, nb_scen=args.nb_scenario, inter_arrival_rate=args.arr_rate
         )
         stat_SBA_CH = run_SBA_greedy(
             no,nb_scen=args.nb_scenario,
-            inter_arrival_rate=args.inter_arrival_rate,capacity_heur=True,
-        )
-        # stat_RL= run_stable_baselines(no)
+            inter_arrival_rate=args.arr_rate,capacity_heur=True,
+        )'''
+        stat_RL= run_stable_baselines(no)
 
-        results.append(stat_DH + stat_CH + stat_SBA_DH + stat_SBA_CH)
+        results.append(stat_DH + stat_CH + stat_RL)
         print("----------------------------------------")
 
     with open(
         args.output_folder + "/result_"
         + str(args.instance_type)
-        + "_" + str(args.inter_arrival_rate)
+        + "_" + str(args.arr_rate)
         + "_" + str(args.nb_scenario)
         + "_" + str(args.obj)
         + ".csv", "w",

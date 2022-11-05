@@ -23,40 +23,23 @@ class DHHSRP(gym.Env):
     ACCEPT = 1
     REJECT = 0
 
-    def __init__(self, instance_dir = "../../enviroment/instances/uniform/150/", reward_type = 'patient', is_episodic=False):
+    def __init__(self, instance_dir = "../../enviroment/instances/uniform/150/", reward_type = 'patient', is_episodic=False, cap_heur = False):
         super(DHHSRP, self).__init__()
-        nb_weeks = 145
-        if (is_episodic):
-            nb_weeks = 20
-
         self.is_episodic = is_episodic
+        nb_weeks = 145
+        if (self.is_episodic):
+            nb_weeks = 22
+
+        
         self.instance_dir = instance_dir
         self.reward_type = reward_type
+        self.cap_heur = cap_heur
         self.env = PatientRequest()
-        self.env.make(self.instance_dir + str(0) + ".in", self.instance_dir + "context.in", nb_weeks = 145)
+        self.env.make(self.instance_dir + str(0) + ".in", self.instance_dir + "context.in", nb_weeks = nb_weeks)
 
         self.action_space = spaces.Discrete(2)
         self.observation_space = spaces.Box(low=0, high=2,
                                                 shape=(1, 4 * self.env.nb_nurses + 7,), dtype=np.float64)
-
-    def find_next_valid_request(self, request_position):
-        next_position = (None, None, None)
-        c_week, c_day, c_index = request_position
-        for week in range(c_week, self.env.nb_weeks):
-            for day in range(0, self.env.day_per_week):
-                if (week == c_week and day < c_day):
-                    continue;
-                for index in range(len(self.requests[week][day])):
-                    if (week == c_week and day == c_day and index <= c_index):
-                        continue;
-                    request = self.requests[week][day][index]
-                    current_time = (week, day, request.current_time)
-                    (valid, min_cost_insertion) = self.sched.check_feasible(request, current_time, weekly_deadline = True)
-                    if valid == True :
-                        new_request_position = ( week, day, index )
-                        return (current_time, new_request_position, request)
-
-        return (None, None,None)
 
     def find_next_request(self, request_position):
         next_position = (None, None, None)
@@ -77,13 +60,14 @@ class DHHSRP(gym.Env):
         return (None, None,None)
 
     def reset(self):
-        # Size of the 1D-grid
         instance_no = np.random.randint(900)
-        # Initialize the agent at the right of the grid
         self.env = PatientRequest()
-        self.env.make(self.instance_dir + str(instance_no) + ".in", self.instance_dir + "context.in", nb_weeks = 145)
+        nb_weeks = 145
+        if (self.is_episodic):
+            nb_weeks = 22
+            
+        self.env.make(self.instance_dir + str(instance_no) + ".in", self.instance_dir + "context.in", nb_weeks = nb_weeks)
         self.env.scheduling_horizon = 150
-        self.env.nb_weeks = 146
         self.sched = Schedule(self.env)
         self.requests = self.env.get_request()
         self.feature_extractor = FeatureExtractor(self.env, self.sched)
@@ -91,7 +75,7 @@ class DHHSRP(gym.Env):
         self.current_time =  (0, 0, 0)
         self.request_position = (0, 0, -1)
         initial_state = None
-        # Initialize the agent at the right of the grid
+
         for week in range(0, 4):
             for day in range(self.env.day_per_week):
                 for request in self.requests[week][day]:
@@ -112,31 +96,32 @@ class DHHSRP(gym.Env):
         infor = {} 
         if (self.is_post_state == True):
             self.current_time, self.request_position, next_request = self.find_next_request(self.request_position) #???
-            (valid, min_cost_insertion) = self.sched.check_feasible(next_request, self.current_time, weekly_deadline = True)
-            obs = self.feature_extractor.get_feature(request=next_request, current_time=self.current_time, min_cost_insertion=min_cost_insertion, valid=valid);
+            (valid, min_cost_insertion) = self.sched.check_feasible(next_request, self.current_time, weekly_deadline = True, capacity_heur = self.cap_heur)
+            obs = self.feature_extractor.get_feature(request=next_request, current_time=self.current_time, min_cost_insertion=min_cost_insertion, valid=valid, capacity_heur = self.cap_heur);
             self.is_post_state = False
             reward = 0
         else:
             week, day, index = self.request_position;
             request = self.requests[week][day][index];
-            (valid, min_cost_insertion) = self.sched.check_feasible(request, self.current_time, weekly_deadline = True)
+            (valid, min_cost_insertion) = self.sched.check_feasible(request, self.current_time, weekly_deadline = True, capacity_heur = self.cap_heur)
             if action == self.REJECT or valid == False:
-                obs = self.feature_extractor.get_feature(request=request, current_time=self.current_time, min_cost_insertion=min_cost_insertion, is_post_state = True);
+                obs = self.feature_extractor.get_feature(request=request, current_time=self.current_time, min_cost_insertion=min_cost_insertion, is_post_state = True, capacity_heur = self.cap_heur);
                 reward = 0
             elif action == self.ACCEPT:
-                self.sched.accept_checked_request(request, min_cost_insertion, weekly_deadline = True)
-                obs = self.feature_extractor.get_feature(request=request, current_time=self.current_time, min_cost_insertion=min_cost_insertion, is_post_state = True);
+                self.sched.accept_checked_request(request, min_cost_insertion, weekly_deadline = True, capacity_heur = self.cap_heur)
+                obs = self.feature_extractor.get_feature(request=request, current_time=self.current_time, min_cost_insertion=min_cost_insertion, is_post_state = True, capacity_heur = self.cap_heur);
                 reward = 1
                 if (self.reward_type == 'visit'):
-                        reward = request.require_time[0] * request.require_time[1] / 200
+                        reward = request.require_time[0] * request.require_time[1]
             else:
                 raise ValueError("Received invalid action={} which is not part of the action space".format(action))
             self.is_post_state = True
-
-        if (week == self.env.nb_weeks -  1 and day == self.env.day_per_week - 1 and index == (len(self.requests[week][day]) - 1):
+        
+        week, day, index = self.current_time
+        if week >= self.env.nb_weeks -  3:
             if (self.is_episodic):
                 done = True
-        
+
         return obs, reward, done, infor
 
     def render(self, mode='console'):

@@ -10,10 +10,13 @@ class SingletonMeta(type):
         return cls._instances[cls]
 
 class Logger(metaclass=SingletonMeta):
-    def __init__(self, dir=""):
-        self.train_log   = open(dir + "/LOG", "w")
-        self.test_log    = open(dir + "/TEST", "w")
-        self.lr_log      = open(dir + "/LR", "w")
+    def __init__(self, dir="", use=['train', 'test', 'lr']):
+        if ('train' in use):
+            self.train_log   = open(dir + "/LOG", "w")
+        if ('test' in use):
+            self.test_log    = open(dir + "/TEST", "w")
+        if ('lr' in use):
+            self.lr_log      = open(dir + "/LR", "w")
 
     def init_lr_log(self, episode):
         self.lr_log.write("episodes : {}\n".format(episode))
@@ -30,10 +33,12 @@ class Logger(metaclass=SingletonMeta):
   
     def write_test_log(self, episode, score):
         self.test_log.write(str(episode) + " " + str(score) + '\n')
+        self.test_log.flush()
+
     def flush_log(self):
         self.train_log.flush()
-        self.test_log.flush()
         self.lr_log.flush()
+
     def close_log(self):
         self.train_log.close()
         self.test_log.close()

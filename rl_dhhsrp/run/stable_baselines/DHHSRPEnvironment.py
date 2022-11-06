@@ -23,7 +23,7 @@ class DHHSRP(gym.Env):
     ACCEPT = 1
     REJECT = 0
 
-    def __init__(self, instance_dir = "../../enviroment/instances/uniform/150/", reward_type = 'patient', is_episodic=False, cap_heur = False):
+    def __init__(self, instance_dir = "../../enviroment/instances/uniform/150/", reward_type = 'patient', is_episodic=False, cap_heur = False, nb_nurse = 6):
         super(DHHSRP, self).__init__()
         self.is_episodic = is_episodic
         nb_weeks = 145
@@ -34,9 +34,9 @@ class DHHSRP(gym.Env):
         self.instance_dir = instance_dir
         self.reward_type = reward_type
         self.cap_heur = cap_heur
+        self.nb_nurse = nb_nurse
         self.env = PatientRequest()
-        self.env.make(self.instance_dir + str(0) + ".in", self.instance_dir + "context.in", nb_weeks = nb_weeks)
-
+        self.env.make(self.instance_dir + str(0) + ".in", self.instance_dir + "/../../context_" + str(self.nb_nurse) + ".in", nb_weeks = nb_weeks)
         self.action_space = spaces.Discrete(2)
         self.observation_space = spaces.Box(low=0, high=2,
                                                 shape=(1, 4 * self.env.nb_nurses + 7,), dtype=np.float64)
@@ -66,7 +66,7 @@ class DHHSRP(gym.Env):
         if (self.is_episodic):
             nb_weeks = 22
             
-        self.env.make(self.instance_dir + str(instance_no) + ".in", self.instance_dir + "context.in", nb_weeks = nb_weeks)
+        self.env.make(self.instance_dir + str(instance_no) + ".in", self.instance_dir + "/../../context_" + str(self.nb_nurse) + ".in", nb_weeks = nb_weeks)
         self.env.scheduling_horizon = 150
         self.sched = Schedule(self.env)
         self.requests = self.env.get_request()

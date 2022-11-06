@@ -20,10 +20,10 @@ def reward(obj: str, request: Request):
         return 1
     return None
 
-def run_stable_baselines(no: int, instance_dir, model, obj):
-    env_type = TimeLimit(DHHSRP(instance_dir, reward_type=0), max_episode_steps=10000)
+def run_stable_baselines(no: int, instance_dir,  model, obj, epsilon = 0, cap_heur = False, nb_nurse = 6):
+    env_type = TimeLimit(DHHSRP(instance_dir, reward_type=obj, nb_nurse = nb_nurse), max_episode_steps=10000)
     env = PatientRequest()
-    env.make(instance_dir + str(no) + ".in", instance_dir + "context.in")
+    env.make(instance_dir + str(no) + ".in", instance_dir + "/../../context_" + str(nb_nurse) + ".in")
 
     sched = Schedule(env)
     requests = env.get_request()
@@ -35,19 +35,22 @@ def run_stable_baselines(no: int, instance_dir, model, obj):
                 total_request = total_request + 1
                 current_time = (week, day, request.current_time)
                 (valid, min_cost_insertion) = sched.check_feasible(
-                    request, current_time, weekly_deadline=True
+                    request, current_time, weekly_deadline=True, capacity_heur = cap_heur
                 )
                 if valid == True:
                     state = feature_extractor.get_feature(
-                        request, current_time, min_cost_insertion
+                        request, current_time, min_cost_insertion, capacity_heur = cap_heur
                     )
-                    action, _states = model.predict(state)
+                    if (np.random.random_sample() < epsilon):
+                        action = np.random.randint(2)
+                    else:
+                        action, _states = model.predict(state)
 
                     if action == 0 and week > 3:
                         continue
                     else:
                         sched.accept_checked_request(
-                            request, min_cost_insertion, weekly_deadline=True
+                            request, min_cost_insertion, weekly_deadline=True, capacity_heur = cap_heur
                         )
                         ans_rl = ans_rl + reward(obj, request)
 
@@ -100,14 +103,17 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         return True
 
 class SaveTestCallback(BaseCallback):
-    def __init__(self, check_freq: int, log_dir: str, instance_dir: str, filename : str, obj = 'patient', verbose=1):
+    def __init__(self, check_freq: int, log_dir: str, instance_dir: str, filename : str, obj = 'patient', total_timesteps = 1e6, cap_heur = False, verbose=1, nb_nurse = 6):
         super(SaveTestCallback, self).__init__(verbose)
         self.check_freq = check_freq
         self.log_dir = log_dir
         self.save_path = os.path.join(log_dir, filename)
         self.best_test_result = -np.inf
         self.instance_dir = instance_dir
+        self.total_timesteps = total_timesteps
         self.obj = obj
+        self.cap_heur = cap_heur
+        self.nb_nurse = nb_nurse
 
     def _init_callback(self) -> None:
         # Create folder if needed
@@ -115,21 +121,28 @@ class SaveTestCallback(BaseCallback):
             os.makedirs(self.log_dir, exist_ok=True)
 
     def _on_step(self) -> bool:
+
+        fraction = self.n_calls / self.total_timesteps
+        epsilon = 1 + fraction * (0.05 - 1)
         if self.n_calls % self.check_freq == 0:
-            test_pool = [900, 901, 902, 903, 904, 905, 906]
+            test_pool = [950, 951, 952, 953, 954]
             test_res = 0
-
+            test_epsilon = 0
             for no in test_pool:
-                ans = run_stable_baselines(no, instance_dir = self.instance_dir, model=self.model, obj=self.obj)
+                ans = run_stable_baselines(no, instance_dir = self.instance_dir, model=self.model, obj=self.obj, cap_heur = self.cap_heur, nb_nurse=self.nb_nurse)
                 test_res  = test_res + ans
+                ans_epsilon = run_stable_baselines(no, instance_dir = self.instance_dir, model=self.model, epsilon=epsilon, obj=self.obj, cap_heur =self.cap_heur,nb_nurse=self.nb_nurse)
+                test_epsilon = test_epsilon + ans_epsilon
             test_res = test_res / len(test_pool)
-
+            test_epsilon = test_epsilon/len(test_pool
+            )
             if self.verbose > 0:
                 print(
                     f"Test result: {test_res:.2f}"
                 )
-            logger = Logger(dir=self.log_dir, use=['test'])
+            logger = Logger(dir=self.log_dir, use=['test', 'eval'])
             logger.write_test_log(episode=self.n_calls, score = test_res)
+            logger.write_eval_log(episode=self.n_calls, score = test_epsilon)
             
             # New best model, you could save the agent here
             if test_res > self.best_test_result:

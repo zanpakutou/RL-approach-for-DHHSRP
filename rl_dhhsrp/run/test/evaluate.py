@@ -23,6 +23,7 @@ import argparse
 import time
 
 parser = argparse.ArgumentParser()
+
 parser.add_argument(
     "--output_folder",
     type=str,
@@ -42,6 +43,13 @@ parser.add_argument(
     default=360,
     choices=[60, 150, 240, 360],
     help='Instance"s arrival rate',
+)
+parser.add_argument(
+    "--nb_nurse",
+    type=int,
+    default=6,
+    choices=[1, 6, 12],
+    help="Number of nurse",
 )
 parser.add_argument(
     "--nb_scenario",
@@ -65,10 +73,9 @@ def reward(obj: str, request: Request):
         return 1
     return None
 
-
 def run_DH_greedy(no: int):
     env = PatientRequest()
-    env.make(instance_dir + str(no) + ".in", instance_dir + "context.in")
+    env.make(instance_dir + str(no) + ".in", instance_dir + "/../../context_" + str(args.nb_nurse) + ".in")
     sched = Schedule(env)
     requests = env.get_request()
     ans_greedy = total_request = 0
@@ -91,12 +98,11 @@ def run_DH_greedy(no: int):
     print(
         "DH schedule \t" + str(ans_greedy) + " per " + str(total_request) + " requests"
     )
-    return [ans_greedy, ans_greedy / total_request]
-
+    return sched.get_metrics() + [ans_greedy, ans_greedy / total_request]
 
 def run_CH_greedy(no: int):
     env = PatientRequest()
-    env.make(instance_dir + str(no) + ".in", instance_dir + "context.in")
+    env.make(instance_dir + str(no) + ".in", instance_dir + "/../../context_" + str(args.nb_nurse) + ".in")
 
     sched = Schedule(env)
     requests = env.get_request()
@@ -122,8 +128,7 @@ def run_CH_greedy(no: int):
         + str(total_request)
         + " requests"
     )
-    return  [ans_greedy_cap, ans_greedy_cap / total_request]
-
+    return  sched.get_metrics() + [ans_greedy_cap, ans_greedy_cap / total_request]
 
 def run_SBA_greedy(
     no: int,
@@ -133,7 +138,7 @@ def run_SBA_greedy(
     capacity_heur=False,
 ):
     env = PatientRequest()
-    env.make(instance_dir + str(no) + ".in", instance_dir + "context.in")
+    env.make(instance_dir + str(no) + ".in", instance_dir + "/../../context_" + str(args.nb_nurse) + ".in")
     sched = Schedule(env)
     requests = env.get_request()
 
@@ -168,7 +173,7 @@ def run_SBA_greedy(
                         st = time.time()
                         action = sba.act(request, current_time)
                         decision_time = decision_time + time.time() - st
-                        decision_made = decision_made + 1
+                    valid_req = valid_req + 1
                         
                     if action[0] == 0:
                         continue
@@ -184,54 +189,18 @@ def run_SBA_greedy(
         ans_sba,
         ans_sba / total_request,
         decision_time / decision_made,
-        decision_made,
+        valid_req,
     ]
-
-
-def run_RL(no: int, model_path="../base/save/test.h5"):
-    config = Config()
-    agent = DDQNAgent(config).load(model_path)
-    agent.epsilon = 0
-    env = PatientRequest()
-    env.make(instance_dir + str(no) + ".in", instance_dir + "context.in")
-    sched = Schedule(env)
-    requests = env.get_request()
-    feature_extractor = FeatureExtractor(env, sched)
-    ans_rl = total_request = 0
-    for week in range(env.nb_weeks):
-        for day in range(env.day_per_week):
-            for request in requests[week][day]:
-                total_request = total_request + 1
-                current_time = (week, day, request.current_time)
-                (valid, min_cost_insertion) = sched.check_feasible(
-                    request, current_time, weekly_deadline=True
-                )
-                if valid == True:
-                    state = feature_extractor.get_feature(
-                        request, current_time, min_cost_insertion
-                    )
-                    action = agent.act(state)
-                    if action == 0 and week > 3:
-                        continue
-                    else:
-                        sched.accept_checked_request(
-                            request, min_cost_insertion, weekly_deadline=True
-                        )
-                        ans_rl = ans_rl + reward(args.obj, request)
-
-    print("RL schedule \t" + str(ans_rl) + " per " + str(total_request) + " requests")
-    return  [ans_rl, ans_rl / total_request]
-
 
 def run_stable_baselines(
     no: int,
-    model_path="../stable_baselines/DQN_240/DQN_model_387.0",
+    model_path="../stable_baselines/DQN_150/DQN_dhhsrp_last_model",
 ):
     config = Config()
     env_type = TimeLimit(DHHSRP(instance_dir, reward_type=0), max_episode_steps=2000)
     model = DQN.load(model_path, env=env_type)
     env = PatientRequest()
-    env.make(instance_dir + str(no) + ".in", instance_dir + "context.in")
+    env.make(instance_dir + str(no) + ".in", instance_dir + "/../../context_" + str(args.nb_nurse) + ".in")
 
     sched = Schedule(env)
     requests = env.get_request()
@@ -258,9 +227,10 @@ def run_stable_baselines(
                             request, min_cost_insertion, weekly_deadline=True
                         )
                         ans_rl = ans_rl + reward(args.obj, request)
+                    valid_req = valid_req + 1
 
     print("RL schedule \t" + str(ans_rl) + " per " + str(total_request) + " requests")
-    return [ans_rl, ans_rl / total_request]
+    return sched.get_metrics() + [ans_rl, ans_rl / total_request, valid_req]
 
 
 if __name__ == "__main__":
@@ -276,32 +246,29 @@ if __name__ == "__main__":
     )
     print('instance dir: ', instance_dir)
 
-    results = []
-    for no in range(950, 969):
-        print(no)
-        stat_DH = run_DH_greedy(no)
-        stat_CH = run_CH_greedy(no)
-        '''stat_SBA_DH = run_SBA_greedy(
-            no, nb_scen=args.nb_scenario, inter_arrival_rate=args.arr_rate
-        )
-        stat_SBA_CH = run_SBA_greedy(
-            no,nb_scen=args.nb_scenario,
-            inter_arrival_rate=args.arr_rate,capacity_heur=True,
-        )'''
-        stat_RL= run_stable_baselines(no)
-
-        results.append(stat_DH + stat_CH + stat_RL)
-        print("----------------------------------------")
-
     with open(
         args.output_folder + "/result_"
         + str(args.instance_type)
         + "_" + str(args.arr_rate)
         + "_" + str(args.nb_scenario)
         + "_" + str(args.obj)
+        + "_" + str(args.nb_nurse)
         + ".csv", "w",
         newline="", encoding="utf-8",
     ) as f:
         write = csv.writer(f)
-        for line in results:
-            write.writerow(line)
+        for no in range(950, 965):
+            print(no)
+            stat_DH = run_DH_greedy(no)
+            stat_CH = run_CH_greedy(no)
+            stat_SBA_DH = run_SBA_greedy(
+                no, nb_scen=args.nb_scenario, inter_arrival_rate=args.arr_rate
+            )
+            
+            stat_SBA_CH = run_SBA_greedy(
+                no,nb_scen=args.nb_scenario,
+                inter_arrival_rate=args.arr_rate,capacity_heur=True,
+            )
+            #stat_RL= run_stable_baselines(no)
+            print("----------------------------------------")
+            write.writerow(stat_DH + stat_CH + stat_SBA_DH  + stat_SBA_CH)

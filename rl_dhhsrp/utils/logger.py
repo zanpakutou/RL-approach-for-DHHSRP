@@ -15,14 +15,15 @@ class Logger(metaclass=SingletonMeta):
             self.train_log   = open(dir + "/LOG", "w")
         if ('test' in use):
             self.test_log    = open(dir + "/TEST", "w")
-        if ('lr' in use):
-            self.lr_log      = open(dir + "/LR", "w")
+        if ('eval' in use):
+            self.eval_log    = open(dir + "/EVAL", "w")
 
     def init_lr_log(self, episode):
         self.lr_log.write("episodes : {}\n".format(episode))
 
-    def write_lr_log(self, lr):
-        self.lr_log.write(str(lr) + '\n')
+    def write_eval_log(self, episode, score):
+        self.eval_log.write(str(episode) + " " + str(score) + '\n')
+        self.eval_log.flush()
 
     def write_train_log(self, state, pred=[]):
         if len(pred) != 0:

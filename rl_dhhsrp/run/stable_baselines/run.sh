@@ -32,5 +32,5 @@ mkdir   $output_folder
 echo    $output_folder
 echo " **** Training SB agent ..."
 echo $source_code --output_folder $output_folder --instance_type $instance_type --timesteps $time_steps --batch_size $batch_size --NN_size $NN_size --lr $learning_rate --discount_factor $discount_factor --obj $obj --alg $alg
-python3 $source_code --output_folder $output_folder --instance_type $instance_type --timesteps $time_steps --instance_type $instance_type --arr_rate $arr_rate --batch_size $batch_size --NN_size $NN_size --lr $learning_rate --discount_factor $discount_factor --obj $obj --alg $alg 1> $out_stream #2> $err_stream
+python3 $source_code --output_folder $output_folder --instance_type $instance_type --timesteps $time_steps --instance_type $instance_type --arr_rate $arr_rate --batch_size $batch_size --NN_size $NN_size --lr $learning_rate --discount_factor $discount_factor --obj $obj --alg $alg 1> $out_stream 2> $err_stream
 echo " **** Done."

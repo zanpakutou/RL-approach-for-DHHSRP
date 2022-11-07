@@ -14,11 +14,9 @@ from stable_baselines import DQN
 
 from gym.wrappers import TimeLimit
 from run.stable_baselines.DHHSRPEnvironment import DHHSRP
-# import torch
-# torch.cuda.is_available = lambda : False
 
 import csv
-# import numpy as np
+import numpy as np
 import argparse
 import time
 
@@ -33,7 +31,7 @@ parser.add_argument(
 parser.add_argument(
     "--instance_type",
     type=str,
-    default="simplify",
+    default="uniform",
     choices=["uniform", "cluster", "simplify"],
     help="Which folder of customer request need to be run",
 )
@@ -41,7 +39,7 @@ parser.add_argument(
     "--arr_rate",
     type=int,
     default=360,
-    choices=[60, 150, 240, 360],
+    choices=[90, 150, 240, 360],
     help='Instance"s arrival rate',
 )
 parser.add_argument(
@@ -65,6 +63,13 @@ parser.add_argument(
     help="patient: maximize number of patient. visit: maximize number of visit",
 )
 
+args = parser.parse_args()
+filename = args.output_folder + "/result_"\
+    + str(args.instance_type)\
+    + "_" + str(args.arr_rate)\
+    + "_" + str(args.nb_scenario)\
+    + "_" + str(args.obj)\
+    + "_" + str(args.nb_nurse)
 
 def reward(obj: str, request: Request):
     if args.obj == "visit":
@@ -79,6 +84,7 @@ def run_DH_greedy(no: int):
     sched = Schedule(env)
     requests = env.get_request()
     ans_greedy = total_request = 0
+    acc_rate_dict = {'accept' : {}, 'total' : {}}
 
     for week in range(env.nb_weeks):
         for day in range(env.day_per_week):
@@ -88,9 +94,14 @@ def run_DH_greedy(no: int):
                 (valid, min_cost_insertion) = sched.check_feasible(
                     request, current_time, weekly_deadline=True
                 )
+                if (request.require_time not in acc_rate_dict['total'].keys()):
+                    acc_rate_dict['total'][request.require_time] = 0
+                    acc_rate_dict['accept'][request.require_time]= 0
+
+                acc_rate_dict['total'][request.require_time] = acc_rate_dict['total'][request.require_time] + 1
                 if valid == True:
+                    acc_rate_dict['accept'][request.require_time] = acc_rate_dict['accept'][request.require_time] + 1 
                     ans_greedy = ans_greedy + reward(args.obj, request)
-                    #print(reward(args.obj, request))
                     sched.accept_checked_request(
                         request, min_cost_insertion, weekly_deadline=True
                     )
@@ -98,7 +109,7 @@ def run_DH_greedy(no: int):
     print(
         "DH schedule \t" + str(ans_greedy) + " per " + str(total_request) + " requests"
     )
-    return sched.get_metrics() + [ans_greedy, ans_greedy / total_request]
+    return sched.get_metrics() + [ans_greedy, ans_greedy / total_request], acc_rate_dict
 
 def run_CH_greedy(no: int):
     env = PatientRequest()
@@ -107,6 +118,7 @@ def run_CH_greedy(no: int):
     sched = Schedule(env)
     requests = env.get_request()
     ans_greedy_cap = total_request = 0
+    acc_rate_dict = {'accept' : {}, 'total' : {}}
 
     for week in range(env.nb_weeks):
         for day in range(env.day_per_week):
@@ -116,11 +128,17 @@ def run_CH_greedy(no: int):
                 (valid, min_cost_insertion) = sched.check_feasible(
                     request, current_time, weekly_deadline=True, capacity_heur=True
                 )
+                if (request.require_time not in acc_rate_dict['total'].keys()):
+                    acc_rate_dict['total'][request.require_time] = 0
+                    acc_rate_dict['accept'][request.require_time]= 0
+                acc_rate_dict['total'][request.require_time] = acc_rate_dict['total'][request.require_time] + 1
                 if valid == True:
+                    acc_rate_dict['accept'][request.require_time] = acc_rate_dict['accept'][request.require_time] + 1 
                     ans_greedy_cap = ans_greedy_cap + reward(args.obj, request)
                     sched.accept_checked_request(
                         request, min_cost_insertion, weekly_deadline=True
                     )
+
     print(
         "CH schedule \t"
         + str(ans_greedy_cap)
@@ -128,7 +146,7 @@ def run_CH_greedy(no: int):
         + str(total_request)
         + " requests"
     )
-    return  sched.get_metrics() + [ans_greedy_cap, ans_greedy_cap / total_request]
+    return  sched.get_metrics() + [ans_greedy_cap, ans_greedy_cap / total_request], acc_rate_dict
 
 def run_SBA_greedy(
     no: int,
@@ -142,10 +160,13 @@ def run_SBA_greedy(
     sched = Schedule(env)
     requests = env.get_request()
 
-    look_up_scensize = {60: 24, 150: 9, 240: 6, 360: 3}
+    look_up_scensize = {90: 16, 150: 9, 240: 6, 360: 3}
     scen_size = look_up_scensize[inter_arrival_rate]
     sba = SBA(sched, PatientGenerator(mode=args.instance_type), capacity_heur=capacity_heur, num_scen=nb_scen, scen_size=scen_size * 5)
-    ans_sba = total_request = decision_made = decision_time = 0
+    ans_sba = total_request = 0
+    decision_made = valid_req = decision_time = 0
+    acc_rate_dict = {'accept' : {}, 'total' : {}}
+
     for week in range(env.nb_weeks):
         for day in range(env.day_per_week):
             for request in requests[week][day]:
@@ -157,6 +178,10 @@ def run_SBA_greedy(
                     weekly_deadline=True,
                     capacity_heur=capacity_heur,
                 )
+                if (request.require_time not in acc_rate_dict['total'].keys()):
+                    acc_rate_dict['total'][request.require_time] = 0
+                    acc_rate_dict['accept'][request.require_time]= 0
+                acc_rate_dict['total'][request.require_time] = acc_rate_dict['total'][request.require_time] + 1
                 if valid == True:
                     action = [0]
                     if week <= 3:
@@ -173,10 +198,12 @@ def run_SBA_greedy(
                         st = time.time()
                         action = sba.act(request, current_time)
                         decision_time = decision_time + time.time() - st
+                        decision_made = decision_made + 1
                     valid_req = valid_req + 1
                         
                     if action[0] == 0:
                         continue
+                    acc_rate_dict['accept'][request.require_time] = acc_rate_dict['accept'][request.require_time] + 1 
                     ans_sba = ans_sba + reward(args.obj, request)
                     sched.accept_request(
                         request, current_time, action[1], weekly_deadline=True, capacity_heur = capacity_heur
@@ -185,12 +212,15 @@ def run_SBA_greedy(
         "SBA " + str(capacity_heur) + " schedule \t"
         + str(ans_sba) + " per " + str(total_request) + " requests"
     )
+    heur_name = 'CH' if capacity_heur else 'DH'
+
+
     return sched.get_metrics() + [
         ans_sba,
         ans_sba / total_request,
         decision_time / decision_made,
         valid_req,
-    ]
+    ], acc_rate_dict
 
 def run_stable_baselines(
     no: int,
@@ -234,7 +264,6 @@ def run_stable_baselines(
 
 
 if __name__ == "__main__":
-    args = parser.parse_args()
     os.makedirs(args.output_folder, exist_ok=True)
     print('output folder: ', args.output_folder)
     instance_dir = (
@@ -246,29 +275,44 @@ if __name__ == "__main__":
     )
     print('instance dir: ', instance_dir)
 
+    g_DH_dict = {}
+    g_CH_dict = {}
+    g_SDH_dict = {}
+    g_SCH_dict = {}
+
     with open(
-        args.output_folder + "/result_"
-        + str(args.instance_type)
-        + "_" + str(args.arr_rate)
-        + "_" + str(args.nb_scenario)
-        + "_" + str(args.obj)
-        + "_" + str(args.nb_nurse)
-        + ".csv", "w",
+        filename + ".csv", "w",
         newline="", encoding="utf-8",
     ) as f:
         write = csv.writer(f)
-        for no in range(950, 965):
+        for no in range(950, 976):
             print(no)
-            stat_DH = run_DH_greedy(no)
-            stat_CH = run_CH_greedy(no)
-            stat_SBA_DH = run_SBA_greedy(
+            stat_DH, DH_dict = run_DH_greedy(no)
+            stat_CH, CH_dict = run_CH_greedy(no)
+            stat_SBA_DH, SDH_dict = run_SBA_greedy(
                 no, nb_scen=args.nb_scenario, inter_arrival_rate=args.arr_rate
             )
             
-            stat_SBA_CH = run_SBA_greedy(
+            stat_SBA_CH, SCH_dict = run_SBA_greedy(
                 no,nb_scen=args.nb_scenario,
                 inter_arrival_rate=args.arr_rate,capacity_heur=True,
             )
             #stat_RL= run_stable_baselines(no)
-            print("----------------------------------------")
             write.writerow(stat_DH + stat_CH + stat_SBA_DH  + stat_SBA_CH)
+            f.flush()
+            print("----------------------------------------")
+
+            g_DH_dict[no] = DH_dict
+            g_CH_dict[no] = CH_dict
+            g_SDH_dict[no] = SDH_dict
+            g_SCH_dict[no] = SCH_dict
+
+            np.save(filename + '_DH_.npy', g_DH_dict)
+            np.save(filename + '_CH_.npy', g_CH_dict)
+            np.save(filename + '_SBA_DH.npy', g_SDH_dict)
+            np.save(filename + '_SBA_CH.npy', g_SCH_dict)
+    
+    #g_DH_dict = np.load(filename + '_DH_.npy', allow_pickle='TRUE')
+    #g_CH_dict = np.load(filename + '_CH_.npy', allow_pickle='TRUE')
+    #g_SDH_dict = np.load(filename + '_SBA_DH.npy', allow_pickle='TRUE')
+    #_SCH_dict = np.load(filename + '_SBA_CH.npy', allow_pickle='TRUE')

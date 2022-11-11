@@ -1,19 +1,19 @@
 #!/bin/bash
-#SBATCH --array=1-96
-#SBATCH --job-name=sb_dhhsrp
+#SBATCH --array=1-48
+#SBATCH --job-name=ddqn_dhhsrp
 #SBATCH --time=48:00:00
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=10G
 #SBATCH --account=def-roussea5
 #SBATCH --mail-user=phamtusan@gmail.com
 #SBATCH --mail-type=ALL
-#SBATCH --output=/home/tusan/projects/def-roussea5/tusan/software/RL-approach-for-DHHSRP/rl_dhhsrp/run/2022_11_7/log/%x_%a.out
+#SBATCH --output=/home/tusan/projects/def-roussea5/tusan/software/RL-approach-for-DHHSRP/rl_dhhsrp/run/2022_11_11/log/%x_%a.out
 
 parent_dir='/home/tusan/projects/def-roussea5/tusan/software/RL-approach-for-DHHSRP' #Change this
 #parent_dir='../../../'
 source_code="${parent_dir}/rl_dhhsrp/run/stable_baselines/training.py"
-CURRENT_DIR="${parent_dir}/rl_dhhsrp/run/2022_11_7/"
-source ${parent_dir}/.env/bin/activate
+CURRENT_DIR="${parent_dir}/rl_dhhsrp/run/2022_11_11/"
+source ${parent_dir}/.env3.7/bin/activate
 
 c=${SLURM_ARRAY_TASK_ID}
 setting=$(sed -n "${c}p" listSettingDDQN.txt)

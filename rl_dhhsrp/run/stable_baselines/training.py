@@ -1,6 +1,6 @@
 import os
 from stable_baselines.common.env_checker import check_env
-from stable_baselines import A2C, DQN
+from stable_baselines import PPO2, DQN
 from stable_baselines.common.evaluation import evaluate_policy
 from stable_baselines.deepq.policies import FeedForwardPolicy
 from stable_baselines.common.vec_env import DummyVecEnv
@@ -54,7 +54,7 @@ if __name__ == "__main__":
         help="patient: maximize number of patient. visit: maximize number of visit",
     )
     parser.add_argument(
-        "--verbose", type=int, default=1, help="Print log of training process or not"
+        "--verbose", type=int, default=0, help="Print log of training process or not"
     )
     parser.add_argument(
         "--cap_heur"
@@ -66,6 +66,13 @@ if __name__ == "__main__":
         default=6,
         choices=[1, 6, 12],
         help="Number of nurse",
+    )
+    parser.add_argument(
+        "--alg",
+        type=str,
+        default='DQN',
+        choices=['DQN', 'PPO'],
+        help="ALgorithm to be use",
     )
 
     args = parser.parse_args()
@@ -90,18 +97,24 @@ if __name__ == "__main__":
             learning_rate=args.lr,
             gamma=args.discount_factor, seed=seed,
             learning_starts=0,
-            exploration_fraction=0.2,
+            exploration_fraction=0.05,
             exploration_initial_eps=1,
             exploration_final_eps=0.05,
             train_freq=100,
-            target_network_update_freq=2000,
+            target_network_update_freq=5000,
             batch_size=args.batch_size,
             policy_kwargs=dict(dueling=False)
         )
+    if (args.alg=='PPO'):
+        model = PPO2('MlpPolicy',
+            env, 
+            verbose=args.verbose,
+            learning_rate=args.lr,
+            gamma=args.discount_factor, seed=seed)
 
     # Callbacks
-    callback_train = SaveOnBestTrainingRewardCallback(check_freq=1e4, log_dir=log_dir, filename="DQN_model")
-    callback_test = SaveTestCallback(check_freq=2e4, log_dir=log_dir, filename="DQN_model", obj = args.obj, total_timesteps = args.timesteps, instance_dir=instance_folder, nb_nurse=args.nb_nurse)
+    callback_train = SaveOnBestTrainingRewardCallback(check_freq=1e4, log_dir=log_dir, filename= args.alg + "_model")
+    callback_test = SaveTestCallback(check_freq=2e4, log_dir=log_dir, filename=args.alg + "_model", obj = args.obj, total_timesteps = args.timesteps, ex_frac=0.05, instance_dir=instance_folder, nb_nurse=args.nb_nurse)
     # Train the agent
     model.learn(args.timesteps, log_interval=2e4, callback=[callback_train, callback_test])
     # Save the agent

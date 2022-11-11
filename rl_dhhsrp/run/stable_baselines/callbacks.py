@@ -12,6 +12,7 @@ from utils.logger import Logger
 
 import matplotlib.pyplot as plt
 import numpy as np
+import copy
 
 def reward(obj: str, request: Request):
     if obj == "visit":
@@ -103,7 +104,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         return True
 
 class SaveTestCallback(BaseCallback):
-    def __init__(self, check_freq: int, log_dir: str, instance_dir: str, filename : str, obj = 'patient', total_timesteps = 1e6, cap_heur = False, verbose=1, nb_nurse = 6):
+    def __init__(self, check_freq: int, log_dir: str, instance_dir: str, filename : str, obj = 'patient', total_timesteps = 1e6, ex_frac = 0.1, cap_heur = False, verbose=1, nb_nurse = 6):
         super(SaveTestCallback, self).__init__(verbose)
         self.check_freq = check_freq
         self.log_dir = log_dir
@@ -111,9 +112,11 @@ class SaveTestCallback(BaseCallback):
         self.best_test_result = -np.inf
         self.instance_dir = instance_dir
         self.total_timesteps = total_timesteps
+        self.explore_fraction = ex_frac
         self.obj = obj
         self.cap_heur = cap_heur
         self.nb_nurse = nb_nurse
+        self.best_model = None
 
     def _init_callback(self) -> None:
         # Create folder if needed
@@ -122,8 +125,9 @@ class SaveTestCallback(BaseCallback):
 
     def _on_step(self) -> bool:
 
-        fraction = self.n_calls / self.total_timesteps
+        fraction = self.n_calls / (self.explore_fraction * self.total_timesteps * 20)
         epsilon = 1 + fraction * (0.05 - 1)
+
         if self.n_calls % self.check_freq == 0:
             test_pool = [950, 951, 952, 953, 954]
             test_res = 0
@@ -134,8 +138,8 @@ class SaveTestCallback(BaseCallback):
                 ans_epsilon = run_stable_baselines(no, instance_dir = self.instance_dir, model=self.model, epsilon=epsilon, obj=self.obj, cap_heur =self.cap_heur,nb_nurse=self.nb_nurse)
                 test_epsilon = test_epsilon + ans_epsilon
             test_res = test_res / len(test_pool)
-            test_epsilon = test_epsilon/len(test_pool
-            )
+            test_epsilon = test_epsilon/len(test_pool)
+            
             if self.verbose > 0:
                 print(
                     f"Test result: {test_res:.2f}"
@@ -148,5 +152,5 @@ class SaveTestCallback(BaseCallback):
             if test_res > self.best_test_result:
                 self.best_test_result = test_res
                 self.model.save(self.save_path + '_' + format(test_res, '.1f'))
-
+                self.model.save(self.save_path + '_best_model')
             return True

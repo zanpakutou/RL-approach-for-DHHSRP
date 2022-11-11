@@ -12,7 +12,7 @@ Reinforcement learning approach for Dynamic Home Health Care Scheduling and Rout
 ### Install enviroment
 ```cd 
 python3.7 -m venv .env
-source .env/bin/activate
+source .env3.7/bin/activate
 pip install -r requirements.txt
 ```
 ### Training

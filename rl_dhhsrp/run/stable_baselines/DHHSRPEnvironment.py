@@ -39,7 +39,7 @@ class DHHSRP(gym.Env):
         self.env.make(self.instance_dir + str(0) + ".in", self.instance_dir + "/../../context_" + str(self.nb_nurse) + ".in", nb_weeks = nb_weeks)
         self.action_space = spaces.Discrete(2)
         self.observation_space = spaces.Box(low=0, high=2,
-                                                shape=(1, 4 * self.env.nb_nurses + 7,), dtype=np.float64)
+                                                shape=(1, 4 * self.env.nb_nurses + 6,), dtype=np.float64)
 
     def find_next_request(self, request_position):
         next_position = (None, None, None)

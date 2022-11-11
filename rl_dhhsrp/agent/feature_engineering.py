@@ -61,7 +61,7 @@ class FeatureExtractor:
         
         remaining_time = 1 - (current_time[1] * 24 * 60 + current_time[2])/(self.env.day_per_week * 24 * 60)
         
-        features = request_info + [cheapest_insertion_cost] + [remaining_time] + \
+        features = request_info + [cheapest_insertion_cost] + \
             next_nurses + future_visit + [is_post_state] + [valid] +\
             total_idle_time_avai + total_travel_time
         return np.reshape(features, [1, len(features)])

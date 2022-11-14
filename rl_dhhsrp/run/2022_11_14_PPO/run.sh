@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --array=1-12
+#SBATCH --array=1-9
 #SBATCH --job-name=ppo_dhhsrp
 #SBATCH --time=48:00:00
 #SBATCH --cpus-per-task=1
@@ -7,12 +7,12 @@
 #SBATCH --account=def-roussea5
 #SBATCH --mail-user=phamtusan@gmail.com
 #SBATCH --mail-type=ALL
-#SBATCH --output=/home/tusan/projects/def-roussea5/tusan/software/RL-approach-for-DHHSRP/rl_dhhsrp/run/2022_11_11_PPO/log/%x_%a.out
+#SBATCH --output=/home/tusan/projects/def-roussea5/tusan/software/RL-approach-for-DHHSRP/rl_dhhsrp/run/2022_11_14_PPO/log/%x_%a.out
 
-parent_dir='/home/tusan/projects/def-roussea5/tusan/software/RL-approach-for-DHHSRP' #Change this
+parent_dir='/home/tusan/projects/def-roussea5/tusan/software/RL-approach-for-DHHSRP'
 #parent_dir='../../../'
 source_code="${parent_dir}/rl_dhhsrp/run/stable_baselines/training.py"
-CURRENT_DIR="${parent_dir}/rl_dhhsrp/run/2022_11_11_PPO/"
+CURRENT_DIR="${parent_dir}/rl_dhhsrp/run/2022_11_14_PPO/"
 source ${parent_dir}/.env3.7/bin/activate
 
 c=${SLURM_ARRAY_TASK_ID}

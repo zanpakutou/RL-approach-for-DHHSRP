@@ -1,13 +1,13 @@
-for obj in ['visit']:
+for obj in ['patient','visit']:
 	for inter_arrival_rate in ['90', '150', '240', '360']:
-		for _type in ['uniform']:
+		for _type in ['uniform', 'cluster']:
 			for default_config in ['0']:
-				for lr in ['0.00005']:
+				for lr in ['0.00007']:
 					for nb_nurse in ['1', '6', '12']:
-						for discount_factor in ['0.998']:
-							for cap_heur in ['True']:
+						for discount_factor in ['0.995']:
+							for cap_heur in ['False']:
 								timestep='20000000'
-								batch_size='512'
+								batch_size='1024'
 
 								command = timestep + ' ' + batch_size\
 								+ ' ' + discount_factor + ' ' + _type + ' ' + inter_arrival_rate\

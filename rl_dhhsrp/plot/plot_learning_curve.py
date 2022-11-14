@@ -10,13 +10,13 @@ instance_type = 'uniform'
 arr_rate = '240'
 obj = "patient"
 nb_nurse = '1'
-use_ch = 'False'
-parent_dir = "/home/quy/Repos/Quy_11_11/Quy/2022_11_7/ddqn/"
+use_ch = 'True'
+parent_dir = "/home/quy/Repos/Quy_11_14/Quy/2022_11_11/ddqn/"
 sba_dir = "/home/quy/Repos/Quy_11_11/Quy/2022_11_8/sba/"
-run_dir = instance_type + "-" + arr_rate + "-" + nb_nurse + "-" + obj + "-" + use_ch + "-15000000-512-0.997" 
+run_dir = instance_type + "-" + arr_rate + "-" + nb_nurse + "-" + obj + "-" + use_ch + "-20000000-512-0.999" 
 
 def get_ddqn_test_content(dir):
-    _dir = dir + "/TEST"
+    _dir = dir + "/EVAL"
     my_file = open(_dir, "r")
     content = my_file.read()
 
@@ -57,7 +57,7 @@ def get_sba_result(dir, nb_scen = '20'):
                 break;
         if (line_count < 5):
             print("Not enough lines in csv")
-            #exit(22)
+            return 500, 500, 500, 500
 
     return mean(dh), mean(ch),  mean(sba_dh), mean(sba_ch)
 
@@ -66,10 +66,10 @@ fig, ax = plt.subplots(3, 4)
 fig.set_size_inches(10, 10)
 fig.tight_layout()
 
-arr_dict={0:'150', 1:'240', 2:'360', 3:'90'}
+arr_dict={0:'90', 1:'150', 2:'240', 3:'360'}
 nb_nurse_dict={0:'1', 1:'6', 2: '12'}
 #rcParams['axes.titlepad'] = 20 
-fig.suptitle('Cluster location distribution', fontsize = 22)
+fig.suptitle(instance_type + ' location distribution', fontsize = 22)
 plt.subplots_adjust(left=0.2,
                 bottom=0.1,
                 right=0.8,
@@ -80,11 +80,10 @@ for i in range(3):
     nb_nurse = nb_nurse_dict[i]
     for j in range(4):
         arr_rate = arr_dict[j]
-        run_dir = instance_type + "-" + arr_rate + "-" + nb_nurse + "-" + obj + "-" + use_ch + "-15000000-512-0.997" 
+        run_dir = instance_type + "-" + arr_rate + "-" + nb_nurse + "-" + obj + "-" + use_ch + "-20000000-512-0.999" 
 
         content_list = get_ddqn_test_content(parent_dir + run_dir)
         dh, ch, sba_dh, sba_ch = get_sba_result(dir=sba_dir + instance_type, nb_scen = '20')
-        print(dh, ch, sba_dh, sba_ch )
         it = [i[0] for i in content_list]
         obj_ = [i[1] for i in content_list]
 
@@ -105,4 +104,4 @@ ax[0][0].set_ylabel('1 Nurses',fontsize=15)
 plt.xlabel('Number of epochs',labelpad = 15, fontsize=15)
 
 plt.show()
-fig.savefig("cluster_patient.jpg")
+fig.savefig(instance_type + "_patient.jpg")

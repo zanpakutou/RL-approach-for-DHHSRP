@@ -227,7 +227,7 @@ def run_stable_baselines(
     model_path="../stable_baselines/DQN_150/DQN_dhhsrp_last_model",
 ):
     config = Config()
-    env_type = TimeLimit(DHHSRP(instance_dir, reward_type=0), max_episode_steps=2000)
+    env_type = TimeLimit(DHHSRP(instance_dir, reward_type=0, nb_nurse = args.nb_nurse), max_episode_steps=2000)
     model = DQN.load(model_path, env=env_type)
     env = PatientRequest()
     env.make(instance_dir + str(no) + ".in", instance_dir + "/../../context_" + str(args.nb_nurse) + ".in")
@@ -235,7 +235,7 @@ def run_stable_baselines(
     sched = Schedule(env)
     requests = env.get_request()
     feature_extractor = FeatureExtractor(env, sched)
-    ans_rl = total_request = 0
+    ans_rl = total_request = valid_req = 0
     for week in range(env.nb_weeks):
         for day in range(env.day_per_week):
             for request in requests[week][day]:
@@ -297,8 +297,8 @@ if __name__ == "__main__":
                 no,nb_scen=args.nb_scenario,
                 inter_arrival_rate=args.arr_rate,capacity_heur=True,
             )
-            #stat_RL= run_stable_baselines(no)
-            write.writerow(stat_DH + stat_CH + stat_SBA_DH  + stat_SBA_CH)
+            #stat_RL= run_stable_baselines(no, model_path = "/home/quy/Repos/Quy_11_11/Quy/2022_11_7/ddqn/cluster-360-1-patient-True-15000000-512-0.997/DQN_model_130.2")
+            write.writerow(stat_DH + stat_CH + stat_SBA_DH + stat_SBA_CH)
             f.flush()
             print("----------------------------------------")
 

@@ -13,69 +13,75 @@ from callbacks import SaveOnBestTrainingRewardCallback, SaveTestCallback, plot_r
 import numpy as np
 import argparse
 
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--instance_type", type=str, default='uniform',
+    choices=['uniform', 'cluster'],
+    help="Type of instances",
+)
+parser.add_argument(
+    "--arr_rate", type=int, default=360,
+    choices=[90, 150, 240, 360],
+    help="Type of instances",
+)
+parser.add_argument(
+    "--NN_size", type=int, default=128,
+    help="Number of neuron per layers",
+)
+parser.add_argument(
+    "--output_folder", type=str, default=".",
+    help="Which folder to write logs and output, generate if not exist",
+)
+parser.add_argument(
+    "--timesteps", type=int, default=10000, help="Number of training timesteps"
+)
+parser.add_argument(
+    "--batch_size", type=int, default=512, help="Number of sample for each NN updating",
+)
+parser.add_argument(
+    "--discount_factor", type=float, default=0.99, help="Discount factor."
+)
+parser.add_argument(
+    "--lr", type=float, default=1e-5, help="Learning rate of deep Q network"
+)
+parser.add_argument(
+    "--obj", type=str, default="patient",
+    choices=['patient', 'visit'],
+    help="patient: maximize number of patient. visit: maximize number of visit",
+)
+parser.add_argument(
+    "--verbose", type=int, default=0, help="Print log of training process or not"
+)
+parser.add_argument(
+    "--cap_heur"
+    , type=bool, default=False, help="Whether or not to use capacity heuristic"
+)
+parser.add_argument(
+    "--nb_nurse",
+    type=int,
+    default=6,
+    choices=[1, 6, 12],
+    help="Number of nurse",
+)
+parser.add_argument(
+    "--alg",
+    type=str,
+    default='DQN',
+    choices=['DQN', 'PPO'],
+    help="ALgorithm to be use",
+)
+
+args = parser.parse_args()
+args_ = parser.parse_args()
+
 class CustomDQNPolicy(FeedForwardPolicy):
     def __init__(self, *args, **kwargs):
         super(CustomDQNPolicy, self).__init__(*args, **kwargs,
-                                           layers=[256, 256],
+                                           layers=[args_.NN_size, args_.NN_size],
                                            layer_norm=False,
                                            feature_extraction="mlp")
-
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--instance_type", type=str, default='uniform',
-        choices=['uniform', 'cluster', 'simplify'],
-        help="Type of instances",
-    )
-    parser.add_argument(
-        "--arr_rate", type=int, default=360,
-        choices=[90, 150, 240, 360],
-        help="Type of instances",
-    )
-    parser.add_argument(
-        "--output_folder", type=str, default=".",
-        help="Which folder to write logs and output, generate if not exist",
-    )
-    parser.add_argument(
-        "--timesteps", type=int, default=10000, help="Number of training timesteps"
-    )
-    parser.add_argument(
-        "--batch_size", type=int, default=512, help="Number of sample for each NN updating",
-    )
-    parser.add_argument(
-        "--discount_factor", type=float, default=0.99, help="Discount factor."
-    )
-    parser.add_argument(
-        "--lr", type=float, default=1e-5, help="Learning rate of deep Q network"
-    )
-    parser.add_argument(
-        "--obj", type=str, default="patient",
-        choices=['patient', 'visit'],
-        help="patient: maximize number of patient. visit: maximize number of visit",
-    )
-    parser.add_argument(
-        "--verbose", type=int, default=0, help="Print log of training process or not"
-    )
-    parser.add_argument(
-        "--cap_heur"
-        , type=bool, default=False, help="Whether or not to use capacity heuristic"
-    )
-    parser.add_argument(
-        "--nb_nurse",
-        type=int,
-        default=6,
-        choices=[1, 6, 12],
-        help="Number of nurse",
-    )
-    parser.add_argument(
-        "--alg",
-        type=str,
-        default='DQN',
-        choices=['DQN', 'PPO'],
-        help="ALgorithm to be use",
-    )
-
-    args = parser.parse_args()
+    
 
     instance_folder = "../../enviroment/instances/" + args.instance_type + '/' + str(args.arr_rate) + '/'
 
@@ -97,9 +103,9 @@ if __name__ == "__main__":
             learning_rate=args.lr,
             gamma=args.discount_factor, seed=seed,
             learning_starts=0,
-            exploration_fraction=0.05,
+            exploration_fraction=0.1,
             exploration_initial_eps=1,
-            exploration_final_eps=0.05,
+            exploration_final_eps=0.1,
             train_freq=100,
             target_network_update_freq=5000,
             batch_size=args.batch_size,

@@ -124,8 +124,8 @@ class SaveTestCallback(BaseCallback):
             os.makedirs(self.log_dir, exist_ok=True)
 
     def _on_step(self) -> bool:
-
-        fraction = self.n_calls / (self.explore_fraction * self.total_timesteps * 20)
+        fraction = self.n_calls / (self.explore_fraction * self.total_timesteps)
+        fraction = min(fraction, 1)
         epsilon = 1 + fraction * (0.05 - 1)
 
         if self.n_calls % self.check_freq == 0:

@@ -1,0 +1,9 @@
+15000000 512 0.995 uniform 150 patient 0.00005 False 1
+15000000 512 0.995 uniform 150 patient 0.00005 False 6
+15000000 512 0.995 uniform 150 patient 0.00005 False 12
+15000000 512 0.995 uniform 240 patient 0.00005 False 1
+15000000 512 0.995 uniform 240 patient 0.00005 False 6
+15000000 512 0.995 uniform 240 patient 0.00005 False 12
+15000000 512 0.995 uniform 360 patient 0.00005 False 1
+15000000 512 0.995 uniform 360 patient 0.00005 False 6
+15000000 512 0.995 uniform 360 patient 0.00005 False 12

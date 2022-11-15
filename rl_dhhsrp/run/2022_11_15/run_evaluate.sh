@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --array=1-15
+#SBATCH --array=1-12
 #SBATCH --job-name=sba
 #SBATCH --time=48:00:00
 #SBATCH --cpus-per-task=1

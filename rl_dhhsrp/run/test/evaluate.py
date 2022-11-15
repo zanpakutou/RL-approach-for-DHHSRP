@@ -152,7 +152,6 @@ def run_SBA_greedy(
     no: int,
     nb_scen=10,
     inter_arrival_rate=360,
-    instance_type="uniform",
     capacity_heur=False,
 ):
     env = PatientRequest()
@@ -162,7 +161,7 @@ def run_SBA_greedy(
 
     look_up_scensize = {90: 16, 150: 9, 240: 6, 360: 3}
     scen_size = look_up_scensize[inter_arrival_rate]
-    sba = SBA(sched, PatientGenerator(mode=args.instance_type), capacity_heur=capacity_heur, num_scen=nb_scen, scen_size=scen_size * 5)
+    sba = SBA(sched, PatientGenerator(mode=args.instance_type), capacity_heur=capacity_heur, num_scen=nb_scen, obj = args.obj, scen_size=scen_size * 5)
     ans_sba = total_request = 0
     decision_made = valid_req = decision_time = 0
     acc_rate_dict = {'accept' : {}, 'total' : {}}

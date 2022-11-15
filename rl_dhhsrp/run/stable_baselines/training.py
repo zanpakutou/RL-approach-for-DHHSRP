@@ -107,6 +107,7 @@ if __name__ == "__main__":
             exploration_initial_eps=1,
             exploration_final_eps=0.1,
             train_freq=100,
+            buffer_size = 3000000,
             target_network_update_freq=5000,
             batch_size=args.batch_size,
             policy_kwargs=dict(dueling=False)

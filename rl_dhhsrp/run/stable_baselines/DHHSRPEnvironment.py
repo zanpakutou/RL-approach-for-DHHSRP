@@ -83,7 +83,7 @@ class DHHSRP(gym.Env):
                     (valid, min_cost_insertion) = self.sched.check_feasible(request, current_time, weekly_deadline = True)
                     if valid == True :
                         self.sched.accept_checked_request(request, min_cost_insertion, weekly_deadline = True)
-                        initial_state = self.feature_extractor.get_feature(request, current_time, min_cost_insertion, is_post_state = True);
+                        initial_state = self.feature_extractor.get_feature(request, current_time, min_cost_insertion, is_post_state = True, obj = self.reward_type);
                         self.request_position = (week, day, len(self.requests[week][day]) - 1)
 
         return initial_state
@@ -97,7 +97,7 @@ class DHHSRP(gym.Env):
         if (self.is_post_state == True):
             self.current_time, self.request_position, next_request = self.find_next_request(self.request_position) #???
             (valid, min_cost_insertion) = self.sched.check_feasible(next_request, self.current_time, weekly_deadline = True, capacity_heur = self.cap_heur)
-            obs = self.feature_extractor.get_feature(request=next_request, current_time=self.current_time, min_cost_insertion=min_cost_insertion, valid=valid, capacity_heur = self.cap_heur);
+            obs = self.feature_extractor.get_feature(request=next_request, current_time=self.current_time, min_cost_insertion=min_cost_insertion, valid=valid, capacity_heur = self.cap_heur, obj = self.reward_type);
             self.is_post_state = False
             reward = 0
         else:
@@ -105,11 +105,11 @@ class DHHSRP(gym.Env):
             request = self.requests[week][day][index];
             (valid, min_cost_insertion) = self.sched.check_feasible(request, self.current_time, weekly_deadline = True, capacity_heur = self.cap_heur)
             if action == self.REJECT or valid == False:
-                obs = self.feature_extractor.get_feature(request=request, current_time=self.current_time, min_cost_insertion=min_cost_insertion, is_post_state = True, capacity_heur = self.cap_heur);
+                obs = self.feature_extractor.get_feature(request=request, current_time=self.current_time, min_cost_insertion=min_cost_insertion, is_post_state = True, capacity_heur = self.cap_heur, obj = self.reward_type);
                 reward = 0
             elif action == self.ACCEPT:
                 self.sched.accept_checked_request(request, min_cost_insertion, weekly_deadline = True, capacity_heur = self.cap_heur)
-                obs = self.feature_extractor.get_feature(request=request, current_time=self.current_time, min_cost_insertion=min_cost_insertion, is_post_state = True, capacity_heur = self.cap_heur);
+                obs = self.feature_extractor.get_feature(request=request, current_time=self.current_time, min_cost_insertion=min_cost_insertion, is_post_state = True, capacity_heur = self.cap_heur, obj = self.reward_type);
                 reward = 1
                 if (self.reward_type == 'visit'):
                         reward = request.require_time[0] * request.require_time[1]

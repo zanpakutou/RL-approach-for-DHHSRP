@@ -7,7 +7,7 @@ class FeatureExtractor:
     def __init__(self, env, schedule):
         self.env = env
         self.schedule = schedule
-    def get_feature(self, request, current_time, min_cost_insertion, is_post_state = False, capacity_heur = False, valid = True):
+    def get_feature(self, request, current_time, min_cost_insertion, is_post_state = False, capacity_heur = False, valid = True, obj = "visit"):
         max_consider_week = self.env.max_required_week;
         total_time = ((self.env.working_tw[1] - self.env.working_tw[0]) * self.env.day_per_week * max_consider_week)
         working_hours = (self.env.working_tw[1] - self.env.working_tw[0])//60
@@ -45,7 +45,8 @@ class FeatureExtractor:
             cheapest_insertion_cost =  min_cost_insertion[0][0] / (80 * sqrt(2) * self.env.max_day_per_week * self.env.max_required_week)
         else :
             cheapest_insertion_cost =  min_cost_insertion[0][3] / (80 * sqrt(2) * self.env.max_day_per_week * self.env.max_required_week)
-
+        if (obj == 'visit'):
+            cheapest_insertion_cost = cheapest_insertion_cost / (request.require_time[0] * request.require_time[1])
         request_info = [request.require_time[0] / self.env.max_required_week, \
             request.require_time[1] / self.env.max_day_per_week, \
             request.require_time[2] / self.env.max_required_hour
@@ -58,7 +59,7 @@ class FeatureExtractor:
             request_info = [0, 0, 0]
             next_nurses[min_cost_insertion[1]] = 0
             valid = False
-        
+            
         remaining_time = 1 - (current_time[1] * 24 * 60 + current_time[2])/(self.env.day_per_week * 24 * 60)
         
         features = request_info + [cheapest_insertion_cost] + \

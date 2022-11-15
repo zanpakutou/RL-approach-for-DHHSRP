@@ -19,12 +19,13 @@ def most_frequent(List):
 
 
 class SBA:
-    def __init__(self, schedule, patient_generator, capacity_heur=False, num_scen=15, scen_size=20):
+    def __init__(self, schedule, patient_generator, capacity_heur=False, obj = "patient",num_scen=15, scen_size=20):
         self.sched = schedule
         self.pat_generator = patient_generator
         self.nb_scenarios = num_scen
         self.avg_request = scen_size
         self.capacity_heur = capacity_heur
+        self.obj = obj
 
     def act(self, request, current_time):
         is_accepted = False
@@ -62,8 +63,12 @@ class SBA:
                         _request, current_time, weekly_deadline=True
                     )
                     if valid == True:
-                        if min_cost_insertion[0][0] < min_cost:
-                            min_cost = min_cost_insertion[0][0]
+                        heuristic = min_cost_insertion[0][0]
+                        if (self.obj == "visit"):
+                                week, day, hour = _request.require_time[0], _request.require_time[1], _request.require_time[2]
+                                heuristic = heuristic / (week * day)
+                        if heuristic < min_cost:
+                            min_cost = heuristic
                             best_index = index
                         is_insertable = True
                     insertions[index] = min_cost_insertion

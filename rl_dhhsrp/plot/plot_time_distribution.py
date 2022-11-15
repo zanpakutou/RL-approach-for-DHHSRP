@@ -17,12 +17,12 @@ from gym.wrappers import TimeLimit
 from run.stable_baselines.DHHSRPEnvironment import DHHSRP
 import numpy as np
 
-instance_dir = '../enviroment/instances/cluster/150/'
+instance_dir = '../enviroment/instances/uniform/150/'
 nb_nurse = 6
 
 def run_stable_baselines(
     no: int,
-    model_path="/home/quy/Repos/Quy_11_11/Quy/2022_11_7/ddqn/cluster-150-6-patient-True-15000000-512-0.997/DQN_model_518.4",
+    model_path="/home/quy/Repos/Quy_11_14/Quy/2022_11_11/ddqn/uniform-150-6-patient-True-20000000-512-0.999/DQN_model_529.4",
 ):
     config = Config()
     env_type = TimeLimit(DHHSRP(instance_dir, reward_type=0, nb_nurse= nb_nurse), max_episode_steps=2000)
@@ -52,13 +52,13 @@ def run_stable_baselines(
                     action, _states = model.predict(state)
 
                     if action == 0 and week > 3:
-                        week, day, hour, dis = state[0], state[1], state[2], state[3]
-                        reject.append((week * 5 + day) * 8 + hour, dis)
+                        _week, _day, _hour, dis = state[0][0], state[0][1], state[0][2], state[0][3]
+                        reject.append([24 * _week * _day *_hour, dis])
                         continue
                     else:
                         x, y = request.location
-                        week, day, hour, dis = state[0], state[1], state[2], state[3]
-                        accept.append((week * 5 + day) * 8 + hour, dis)
+                        _week, _day, _hour, dis = state[0][0], state[0][1], state[0][2], state[0][3]
+                        accept.append([24 * _week * _day * _hour, dis])
                         sched.accept_checked_request(
                             request, min_cost_insertion, weekly_deadline=True
                         )
@@ -66,19 +66,34 @@ def run_stable_baselines(
     return accept, reject 
 
 location_count = None
-plt.subplots_adjust(left=0.05,
-                bottom=0.05,
+
+fig, ax = plt.subplots()
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+plt.subplots_adjust(left=0.1,
+                bottom=0.1,
                 right=0.95,
                 top=0.95,)
 
-for i in range(990, 999):
-    accept, reject = 
-    if (location_count is None):
-        location_count = np.array(run_stable_baselines(i))
-    else:
-        location_count = location_count + np.array(run_stable_baselines(i))
+accept = []
+reject = []
 
-color_map = plt.imshow(location_count, interpolation = None, origin="upper")
-plt.colorbar()
-plt.savefig("location_distribution_cluster_6.jpg", pad_inches=0, dpi=1500)
+for i in range(5, 6):
+    _accept, _reject = run_stable_baselines(i)
+    accept = accept + _accept
+    reject = reject + _reject
+
+accept = np.array(accept)
+reject = np.array(reject)
+
+ax.set_yticklabels([])
+plt.scatter(accept[:,0], accept[:,1], c="red", marker="o", linewidth=1, label="accept")
+plt.scatter(reject[:,0], reject[:,1], c="blue", marker="x", linewidth=1, label="reject")
+
+plt.xlabel('Required service hours', fontsize=15)
+plt.ylabel('Traveling cost of insertion', fontsize=15)
+
+plt.legend(loc='upper left', borderaxespad=0., bbox_to_anchor=(0.05, 0.9), fontsize=13)
+
+plt.savefig("time_distribution_cluster_6.jpg", pad_inches=0, dpi=1500)
 plt.show()

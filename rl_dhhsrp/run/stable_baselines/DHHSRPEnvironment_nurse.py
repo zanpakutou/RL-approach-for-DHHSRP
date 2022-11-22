@@ -37,9 +37,9 @@ class DHHSRP(gym.Env):
         self.nb_nurse = nb_nurse
         self.env = PatientRequest()
         self.env.make(self.instance_dir + str(0) + ".in", self.instance_dir + "/../../context_" + str(self.nb_nurse) + ".in", nb_weeks = nb_weeks)
-        self.action_space = spaces.Discrete(2)
+        self.action_space = spaces.Discrete(self.env.nb_nurses + 1)
         self.observation_space = spaces.Box(low=0, high=2,
-                                                shape=(1, 4 * self.env.nb_nurses + 6,), dtype=np.float64) #10 * self.env.nb_nurses + 6
+                                                shape=(1, 5 * self.env.nb_nurses + 6,), dtype=np.float64) #10 * self.env.nb_nurses + 6
 
     def find_next_request(self, request_position):
         next_position = (None, None, None)
@@ -107,14 +107,18 @@ class DHHSRP(gym.Env):
             if action == self.REJECT or valid == False:
                 obs = self.feature_extractor.get_feature(request=request, current_time=self.current_time, min_cost_insertion=min_cost_insertion, is_post_state = True, capacity_heur = self.cap_heur, obj = self.reward_type);
                 reward = 0
-            elif action == self.ACCEPT:
-                self.sched.accept_checked_request(request, min_cost_insertion, weekly_deadline = True, capacity_heur = self.cap_heur)
-                obs = self.feature_extractor.get_feature(request=request, current_time=self.current_time, min_cost_insertion=min_cost_insertion, is_post_state = True, capacity_heur = self.cap_heur, obj = self.reward_type);
-                reward = 1
-                if (self.reward_type == 'visit'):
-                        reward = request.require_time[0] * request.require_time[1]
             else:
-                raise ValueError("Received invalid action={} which is not part of the action space".format(action))
+                nurse = action - 1
+                (_valid, min_cost_insertion) = self.sched.check_feasible(request, self.current_time, spec_nurse = nurse, weekly_deadline = True, capacity_heur = self.cap_heur)
+                if _valid: 
+                    self.sched.accept_checked_request(request, min_cost_insertion, weekly_deadline = True, capacity_heur = self.cap_heur)
+                    obs = self.feature_extractor.get_feature(request=request, current_time=self.current_time, min_cost_insertion=min_cost_insertion, is_post_state = True, capacity_heur = self.cap_heur, obj = self.reward_type);
+                    reward = 1
+                    if (self.reward_type == 'visit'):
+                        reward = request.require_time[0] * request.require_time[1]
+                else:
+                    obs = self.feature_extractor.get_feature(request=request, current_time=self.current_time, min_cost_insertion=min_cost_insertion, is_post_state = True, capacity_heur = self.cap_heur, obj = self.reward_type);
+                    reward = -10
             self.is_post_state = True
         
         week, day, index = self.current_time

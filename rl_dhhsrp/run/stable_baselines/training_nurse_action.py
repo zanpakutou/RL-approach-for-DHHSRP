@@ -7,8 +7,9 @@ from stable_baselines.common.vec_env import DummyVecEnv
 from stable_baselines.bench.monitor import Monitor
 
 from gym.wrappers import TimeLimit
-from DHHSRPEnvironment import DHHSRP
-from callbacks import SaveOnBestTrainingRewardCallback, SaveTestCallback, plot_results
+from DHHSRPEnvironment_nurse import DHHSRP
+from callbacks import SaveOnBestTrainingRewardCallback, plot_results
+from nurse_callback import SaveTestCallback
 
 import numpy as np
 import argparse
@@ -77,7 +78,7 @@ args_ = parser.parse_args()
 class CustomDQNPolicy(FeedForwardPolicy):
     def __init__(self, *args, **kwargs):
         super(CustomDQNPolicy, self).__init__(*args, **kwargs,
-                                           layers=[args_.NN_size],
+                                           layers=[args_.NN_size, args_.NN_size],
                                            layer_norm=False,
                                            feature_extraction="mlp")
 if __name__ == "__main__":

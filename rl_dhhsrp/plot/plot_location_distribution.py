@@ -12,17 +12,21 @@ from enviroment.patient_generator import PatientGenerator
 from config.config import Config
 from stable_baselines import DQN
 import matplotlib.pyplot as plt
+from matplotlib.patches import Circle
 
 from gym.wrappers import TimeLimit
-from run.stable_baselines.DHHSRPEnvironment import DHHSRP
+from run.stable_baselines.DHHSRPEnvironment_nurse import DHHSRP
 import numpy as np
 
-instance_dir = '../enviroment/instances/cluster/150/'
-nb_nurse = 6
+instance_type = 'cluster'
+nb_nurse = '1'
+instance_dir = '../enviroment/instances/' + instance_type + '/150/'
 
+#n150_cluster_0.995_2x256
 def run_stable_baselines(
     no: int,
-    model_path="/home/quy/Repos/Quy_11_11/Quy/2022_11_7/ddqn/cluster-150-6-patient-True-15000000-512-0.997/DQN_model_518.4",
+    model_path="/home/quy/Repos/RL_DHHSRP/rl_dhhsrp/run/stable_baselines/n150_"  + instance_type + "_0.995_2x256_1/DQN_model_best_model",
+    nb_nurse=nb_nurse
 ):
     config = Config()
     env_type = TimeLimit(DHHSRP(instance_dir, reward_type=0, nb_nurse= nb_nurse), max_episode_steps=2000)
@@ -61,19 +65,38 @@ def run_stable_baselines(
 
     return location_count
 
-location_count = None
-plt.subplots_adjust(left=0.05,
+def location_count_func(nb_nurse: int, model_path):
+    location_count = None
+    for i in range(000, 999):
+        if (location_count is None):
+            location_count = np.array(run_stable_baselines(i, nb_nurse = nb_nurse, model_path=model_path))
+        else:
+            location_count = location_count + np.array(run_stable_baselines(i, nb_nurse = nb_nurse, model_path=model_path))
+
+    return location_count
+
+fig, axes = plt.subplots(nrows=1, ncols=2)
+fig.set_size_inches(14, 5)
+plt.subplots_adjust(left=0.01,
                 bottom=0.05,
-                right=0.95,
-                top=0.95,)
+                right=1,
+                top=0.98,)
 
-for i in range(0, 999):
-    if (location_count is None):
-        location_count = np.array(run_stable_baselines(i))
-    else:
-        location_count = location_count + np.array(run_stable_baselines(i))
 
-color_map = plt.imshow(location_count, interpolation = None, origin="upper")
-plt.colorbar()
-plt.savefig("location_distribution_cluster_6.jpg", pad_inches=0, dpi=1500)
+nb_nurses=['1', '6']
+model_path_= [instance_type + "_0.995_2x256_1/DQN_model_best_model", instance_type + "_0.995_2x256/DQN_model_best_model",]
+index=0
+
+for ax in axes.flat:
+    model_path="/home/quy/Repos/RL_DHHSRP/rl_dhhsrp/run/stable_baselines/n150_" + model_path_[index]
+    im = ax.imshow(location_count_func(nb_nurses[index], model_path), vmin=0, vmax=510)
+    circ = Circle((40, 40), 1.2, color = "coral")
+    ax.add_patch(circ)
+    index=index+1
+
+fig.colorbar(im, ax=axes.ravel().tolist(), pad=0.05)
+
+
+#plt.savefig("location_distribution_" + instance_type + '_' + nb_nurse + ".jpg", pad_inches=0, dpi=1500)
+plt.savefig("test")
 plt.show()

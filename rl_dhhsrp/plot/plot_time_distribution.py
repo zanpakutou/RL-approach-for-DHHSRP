@@ -14,7 +14,7 @@ from stable_baselines import DQN
 import matplotlib.pyplot as plt
 
 from gym.wrappers import TimeLimit
-from run.stable_baselines.DHHSRPEnvironment import DHHSRP
+from run.stable_baselines.DHHSRPEnvironment_nurse import DHHSRP
 import numpy as np
 
 instance_dir = '../enviroment/instances/uniform/150/'
@@ -22,7 +22,7 @@ nb_nurse = 6
 
 def run_stable_baselines(
     no: int,
-    model_path="/home/quy/Repos/Quy_11_14/Quy/2022_11_11/ddqn/uniform-150-6-patient-True-20000000-512-0.999/DQN_model_529.4",
+    model_path="/home/quy/Repos/RL_DHHSRP/rl_dhhsrp/run/stable_baselines/n150_uniform_0.995_1x256/DQN_model_best_model",
 ):
     config = Config()
     env_type = TimeLimit(DHHSRP(instance_dir, reward_type=0, nb_nurse= nb_nurse), max_episode_steps=2000)
@@ -45,23 +45,42 @@ def run_stable_baselines(
                 (valid, min_cost_insertion) = sched.check_feasible(
                     request, current_time, weekly_deadline=True
                 )
+
                 if valid == True:
                     state = feature_extractor.get_feature(
                         request, current_time, min_cost_insertion
                     )
+
                     action, _states = model.predict(state)
 
                     if action == 0 and week > 3:
-                        _week, _day, _hour, dis = state[0][0], state[0][1], state[0][2], state[0][3]
+                        _week, _day, _hour = state[0][0], state[0][1], state[0][2]
+                        
+                        for n in range(6):
+                            if state[0][12 + n]:
+                                _dis.append(state[0][6 + n])
+                        dis = sum(_dis)/len(_dis)
                         reject.append([24 * _week * _day *_hour, dis])
                         continue
                     else:
-                        x, y = request.location
-                        _week, _day, _hour, dis = state[0][0], state[0][1], state[0][2], state[0][3]
-                        accept.append([24 * _week * _day * _hour, dis])
-                        sched.accept_checked_request(
-                            request, min_cost_insertion, weekly_deadline=True
-                        )
+                        if (week > 3):
+                            (valid, min_cost_insertion) = sched.check_feasible(
+                                request, current_time, spec_nurse = action - 1, weekly_deadline=True
+                            )
+                            x, y = request.location
+                            _dis = []
+                            _week, _day, _hour = state[0][0], state[0][1], state[0][2]
+                            for n in range(6):
+                                if state[0][12 + n]:
+                                    _dis.append(state[0][6 + n])
+                            dis = sum(_dis)/len(_dis)
+                            accept.append([24 * _week * _day * _hour, dis])
+                        if (valid):
+                            sched.accept_checked_request(
+                                request, min_cost_insertion, weekly_deadline=True
+                            )
+                        else:
+                            print("invalid")
 
     return accept, reject 
 
@@ -78,7 +97,7 @@ plt.subplots_adjust(left=0.1,
 accept = []
 reject = []
 
-for i in range(5, 6):
+for i in range(123, 124):
     _accept, _reject = run_stable_baselines(i)
     accept = accept + _accept
     reject = reject + _reject

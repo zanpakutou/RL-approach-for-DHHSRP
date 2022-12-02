@@ -9,10 +9,10 @@ from matplotlib import rcParams
 instance_type = 'uniform'
 arr_rate = '240'
 obj = "patient"
-nb_nurse = '6'
+nb_nurse = '1'
 use_ch = 'False'
-parent_dir = "/home/quy/Repos/Result_nurse_action/6_nurse/"#"/home/quy/Repos/Quy_11_17/2022_11_14/ddqn/"
-sba_dir = "/home/quy/Repos/Quy_11_11/Quy/2022_11_8/sba/"
+parent_dir = "/home/quy/Repos/Experiments_result/Result_nurse_action/1_nurse/"#"/home/quy/Repos/Quy_11_17/2022_11_14/ddqn/"
+sba_dir = "/home/quy/Repos/Experiments_result/Quy_11_11/Quy/2022_11_8/sba/"
 #run_dir = instance_type + "-" + arr_rate + "-" + nb_nurse + "-" + obj + "-" + use_ch + "-15000000-2048-0.995" 
 run_dir = "/home/quy/Repos/2022_11_27/" + instance_type + "/DQN_" + arr_rate + "/"
 def get_ddqn_test_content(dir):
@@ -102,7 +102,7 @@ for i in range(3):
         ax[i][j].set_title("arrival rate = " + arr_rate, fontsize=18)
 
 #plt.title('Avg gaps in log scale to reference solutions per iteration', pad=0, fontsize=26)
-#plt.legend(loc='upper center', borderaxespad=0., bbox_to_anchor=(-0.2, 4.5), fontsize=16, ncol=5, fancybox=True)
+plt.legend(loc='upper center', borderaxespad=0., bbox_to_anchor=(-0.2, 4.5), fontsize=16, ncol=5, fancybox=True)
 '''ax[0][0].set_ylabel('150',fontsize=18)
 ax[1][0].set_ylabel('240',fontsize=18)
 ax[2][0].set_ylabel('360',fontsize=18)'''

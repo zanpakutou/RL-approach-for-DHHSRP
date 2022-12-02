@@ -22,7 +22,7 @@ nb_nurse = 6
 
 def run_stable_baselines(
     no: int,
-    model_path="/home/quy/Repos/RL_DHHSRP/rl_dhhsrp/run/stable_baselines/n150_uniform_0.995_1x256/DQN_model_best_model",
+    model_path="/home/quy/Repos/Experiments_result/Result_nurse_action/6_nurse/n150_uniform_0.995_2x256/DQN_model_best_model",
 ):
     config = Config()
     env_type = TimeLimit(DHHSRP(instance_dir, reward_type=0, nb_nurse= nb_nurse), max_episode_steps=2000)
@@ -60,7 +60,7 @@ def run_stable_baselines(
                             if state[0][12 + n]:
                                 _dis.append(state[0][6 + n])
                         dis = sum(_dis)/len(_dis)
-                        reject.append([24 * _week * _day *_hour, dis])
+                        reject.append([24 * _week * _day *_hour, dis * 1357.64501988])
                         continue
                     else:
                         if (week > 3):
@@ -74,7 +74,7 @@ def run_stable_baselines(
                                 if state[0][12 + n]:
                                     _dis.append(state[0][6 + n])
                             dis = sum(_dis)/len(_dis)
-                            accept.append([24 * _week * _day * _hour, dis])
+                            accept.append([24 * _week * _day * _hour, dis * 1357.64501988])
                         if (valid):
                             sched.accept_checked_request(
                                 request, min_cost_insertion, weekly_deadline=True
@@ -105,12 +105,12 @@ for i in range(123, 124):
 accept = np.array(accept)
 reject = np.array(reject)
 
-ax.set_yticklabels([])
+#ax.set_yticklabels([])
 plt.scatter(accept[:,0], accept[:,1], c="red", marker="o", linewidth=1, label="accept")
 plt.scatter(reject[:,0], reject[:,1], c="blue", marker="x", linewidth=1, label="reject")
 
-plt.xlabel('Required service hours', fontsize=15)
-plt.ylabel('Traveling cost of insertion', fontsize=15)
+plt.xlabel('Total required service time (hours)', fontsize=15)
+plt.ylabel('Cheapest insertion cost', fontsize=15)
 
 plt.legend(loc='upper left', borderaxespad=0., bbox_to_anchor=(0.05, 0.9), fontsize=13)
 

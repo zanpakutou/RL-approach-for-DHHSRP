@@ -357,8 +357,7 @@ class Schedule:
                         curr = route.visit[pos]
                         travel_time = travel_time + distance(prev.pos,
                                 curr.pos)
-                        workload = workload + curr.ed - curr.st \
-                            + distance(prev.pos, curr.pos)
+                        workload = workload + curr.ed - curr.st
             nurse_travel_time.append(travel_time)
             nurse_workload.append(workload)
         if self.nb_nurses <= 2:

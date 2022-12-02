@@ -19,10 +19,15 @@ from run.stable_baselines.DHHSRPEnvironment_nurse import DHHSRP
 import numpy as np
 
 instance_type = 'cluster'
-nb_nurse = '1'
+nb_nurse = '6'
 instance_dir = '../enviroment/instances/' + instance_type + '/150/'
 
-#n150_cluster_0.995_2x256
+def is_cluster(i, j):
+    check = False
+    check = check or (i in range(8, 19) and j in range(20, 31))
+    check = check or (i in range(52, 68) and j in range(64, 80))
+    check = check or (i in range(43, 64) and j in range(27, 48))
+    return check
 def run_stable_baselines(
     no: int,
     model_path="/home/quy/Repos/RL_DHHSRP/rl_dhhsrp/run/stable_baselines/n150_"  + instance_type + "_0.995_2x256_1/DQN_model_best_model",
@@ -39,10 +44,16 @@ def run_stable_baselines(
     requests = env.get_request()
     feature_extractor = FeatureExtractor(env, sched)
     ans_rl = total_request = 0
-    
+    in_cluster = 0
+    out_cluster = 0 
     for week in range(env.nb_weeks):
         for day in range(env.day_per_week):
             for request in requests[week][day]:
+                x, y = request.location
+                if (is_cluster(x, y)):
+                    in_cluster = in_cluster + 1
+                else:
+                    out_cluster = out_cluster + 1
                 total_request = total_request + 1
                 current_time = (week, day, request.current_time)
                 (valid, min_cost_insertion) = sched.check_feasible(
@@ -57,45 +68,47 @@ def run_stable_baselines(
                     if action == 0 and week > 3:
                         continue
                     else:
-                        x, y = request.location
+                        
                         location_count[x][y] = location_count[x][y] + 1
                         sched.accept_checked_request(
                             request, min_cost_insertion, weekly_deadline=True
                         )
+               
 
-    return location_count
+    return np.array(location_count), in_cluster, out_cluster
+
 
 def location_count_func(nb_nurse: int, model_path):
     location_count = None
+    in_cluster = 0
+    out_cluster = 0 
+    i = o = 0
     for i in range(000, 999):
         if (location_count is None):
-            location_count = np.array(run_stable_baselines(i, nb_nurse = nb_nurse, model_path=model_path))
+            location_count, i, o = np.array(run_stable_baselines(i, nb_nurse = nb_nurse, model_path=model_path))
         else:
-            location_count = location_count + np.array(run_stable_baselines(i, nb_nurse = nb_nurse, model_path=model_path))
+            x, i, o = np.array(run_stable_baselines(i, nb_nurse = nb_nurse, model_path=model_path))
+            location_count = location_count + x
 
+        in_cluster = in_cluster + i
+        out_cluster = out_cluster + o
+        #print(i, o)
+    print(in_cluster, out_cluster)    
     return location_count
 
-fig, axes = plt.subplots(nrows=1, ncols=2)
-fig.set_size_inches(14, 5)
+fig, axes = plt.subplots(nrows=1, ncols=1)
+fig.set_size_inches(7, 5)
 plt.subplots_adjust(left=0.01,
                 bottom=0.05,
                 right=1,
                 top=0.98,)
 
+model_path="/home/quy/Repos/Experiments_result/Result_nurse_action/6_nurse/n150_" + instance_type + "_0.995_2x256/DQN_model_best_model"
+im = axes.imshow(location_count_func(nb_nurse, model_path))
+circ = Circle((40, 40), 1.2, color = "coral")
+axes.add_patch(circ)
 
-nb_nurses=['1', '6']
-model_path_= [instance_type + "_0.995_2x256_1/DQN_model_best_model", instance_type + "_0.995_2x256/DQN_model_best_model",]
-index=0
-
-for ax in axes.flat:
-    model_path="/home/quy/Repos/RL_DHHSRP/rl_dhhsrp/run/stable_baselines/n150_" + model_path_[index]
-    im = ax.imshow(location_count_func(nb_nurses[index], model_path), vmin=0, vmax=510)
-    circ = Circle((40, 40), 1.2, color = "coral")
-    ax.add_patch(circ)
-    index=index+1
-
-fig.colorbar(im, ax=axes.ravel().tolist(), pad=0.05)
-
+fig.colorbar(im, pad=0.05)
 
 #plt.savefig("location_distribution_" + instance_type + '_' + nb_nurse + ".jpg", pad_inches=0, dpi=1500)
 plt.savefig("test")

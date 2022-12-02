@@ -176,7 +176,6 @@ class FeatureExtractor:
             next_nurses + future_visit + [is_post_state] + [valid] +\
             total_idle_time_avai + total_travel_time
         return np.reshape(features, [1, len(features)])
-
     def get_nurse_choosing_feature(self, request, current_time, min_cost_insertion, is_post_state = False, capacity_heur = False, valid = True, obj = "patient"):
         max_consider_week = self.env.max_required_week;
         total_time = ((self.env.working_tw[1] - self.env.working_tw[0]) * self.env.day_per_week * max_consider_week)
@@ -246,6 +245,5 @@ class FeatureExtractor:
             total_idle_time_avai + total_travel_time
 
         return np.reshape(features, [1, len(features)])
-
-    def get_feature(self, request, current_time, min_cost_insertion, is_post_state = False, capacity_heur = False, valid = True, obj = "visit"):
+    def get_feature(self, request, current_time, min_cost_insertion, is_post_state = False, capacity_heur = False, valid = True, obj = "patient"):
         return self.get_nurse_choosing_feature(request, current_time, min_cost_insertion, is_post_state = is_post_state, capacity_heur = capacity_heur, valid = valid, obj = obj);

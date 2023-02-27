@@ -7,7 +7,7 @@ import numpy as np
 import statistics
 
 delta = 15
-duration = 60  # end_time - start_time
+duration = 30  # end_time - start_time
 
 
 def best_case_func(p, s):
@@ -137,7 +137,7 @@ class Route:
 class Schedule:
 
     def __init__(self, env):
-        self.planned_routes = [[[Route(env.nurse_depot, env.working_tw)
+        self.planned_routes = [[[Route(env.nurse_depot[k], env.working_tw)
                                for i in range(env.day_per_week)]
                                for j in range(env.scheduling_horizon)]
                                for k in range(env.nb_nurses)]
@@ -150,6 +150,7 @@ class Schedule:
         self.nb_nurses = env.nb_nurses
         self.qual = env.qual
         self.count_accept_pat = [0] * 9
+        duration = env.max_required_hour
 
     def check_feasible(
         self,
@@ -189,7 +190,7 @@ class Schedule:
                     if not self.work_tw[0] <= time <= self.work_tw[1]:
                         continue
                     if not self.work_tw[0] <= time \
-                        + request.require_time[2] * 60 \
+                        + request.require_time[2] * 15 \
                         <= self.work_tw[1]:
                         continue
 
@@ -226,10 +227,10 @@ class Schedule:
                                 # Check valid insertion
                                 if capacity_heur == True:
                                     cost = self.planned_routes[nurse][week][day].capacity_criteria(request.location,
-                                        time, time + request.require_time[2] * 60, checking=True)
+                                        time, time + request.require_time[2] * 15, checking=True)
                                 else:
                                     cost = self.planned_routes[nurse][week][day].insert(request.location,
-                                        time, time + request.require_time[2] * 60, checking=True)
+                                        time, time + request.require_time[2] * 15, checking=True)
 
                                 if cost[0] < 0:
                                     nurse_is_ok = False
@@ -255,9 +256,9 @@ class Schedule:
                 min_cost_insertion[2], min_cost_insertion[3],
                 min_cost_insertion[4], min_cost_insertion[5])
 
-        if min_cost_insertion[0] < (MAX_VAL - 1, MAX_VAL, MAX_VAL,
-                                    MAX_VAL):
+        if min_cost_insertion[0] < (MAX_VAL - 1, MAX_VAL, MAX_VAL, MAX_VAL):
             return (True, min_cost_insertion)
+            
         return (False, min_cost_insertion)
 
     def accept_request(
@@ -291,7 +292,7 @@ class Schedule:
                           + request.require_time[0]):
             for day in pattern:
                 self.planned_routes[nurse][week][day].insert(request.location,
-                        time, time + request.require_time[2] * 60)
+                        time, time + request.require_time[2] * 15)
         return True
 
     def accept_checked_request(
@@ -321,11 +322,11 @@ class Schedule:
                 if capacity_heur == True:
                     check = \
                         self.planned_routes[nurse][week][day].capacity_criteria(request.location,
-                            time, time + request.require_time[2] * 60)
+                            time, time + request.require_time[2] * 15)
                 else:
                     check = \
                         self.planned_routes[nurse][week][day].insert(request.location,
-                            time, time + request.require_time[2] * 60)
+                            time, time + request.require_time[2] * 15)
                 if check[0] < -0.5:
                     print("??? check fail")
         return True

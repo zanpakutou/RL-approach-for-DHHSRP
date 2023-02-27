@@ -18,17 +18,17 @@ class PatientRequest:
         self.nb_nurses = 0
         self.working_tw = (0, 1439)
         self.qual = []
-        self.nurse_depot = (0, 0)
+        self.nurse_depot = [] 
         self.scheduling_horizon = 0
         #Init patient parameter
         self.nb_weeks = 0
         self.day_per_week = 0
         self.max_required_week = 0
         self.max_day_per_week = 0
-        self.max_required_hour = 0
+        self.max_required_hour = 0.0
         self.requests = []
         
-    def make(self, patient_dir, context_dir, nb_weeks=20):
+    def make(self, patient_dir, context_dir, nb_weeks=8):
         """Read param for patients from 'patient_dir' and
             param for nurses from context_dir
         """
@@ -46,8 +46,10 @@ class PatientRequest:
                     buff = list(map(int, re.findall(r'\d+', line)))
                     self.qual = buff
                 if "Nurse location:" in line:
+                    self.nurse_depot = []
                     buff = list(map(int, re.findall(r'\d+', line)))
-                    self.nurse_depot = (buff[0], buff[1])
+                    for i in range(self.nb_nurses):
+                        self.nurse_depot.append((buff[i * 2], buff[i * 2 + 1]))
                 if "Scheduling horizon:" in line:
                     self.scheduling_horizon = int(re.search(r'\d+', line).group())
             cnt = 0

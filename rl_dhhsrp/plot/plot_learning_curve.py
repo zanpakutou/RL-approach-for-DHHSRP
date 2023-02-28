@@ -6,15 +6,15 @@ import csv
 from statistics import mean 
 from matplotlib import rcParams
 
-instance_type = 'cluster'
+instance_type = 'uniform'
 arr_rate = '240'
 obj = "patient"
 nb_nurse = '1'
-use_ch = 'True'
-parent_dir = "/home/quy/Repos/Quy_11_14/Quy/2022_11_11/ddqn/"
-sba_dir = "/home/quy/Repos/Quy_11_11/Quy/2022_11_8/sba/"
-run_dir = instance_type + "-" + arr_rate + "-" + nb_nurse + "-" + obj + "-" + use_ch + "-20000000-512-0.999" 
-
+use_ch = 'False'
+parent_dir = "/home/quy/Repos/Experiments_result/Result_nurse_action/1_nurse/"#"/home/quy/Repos/Quy_11_17/2022_11_14/ddqn/"
+sba_dir = "/home/quy/Repos/Experiments_result/Quy_11_11/Quy/2022_11_8/sba/"
+#run_dir = instance_type + "-" + arr_rate + "-" + nb_nurse + "-" + obj + "-" + use_ch + "-15000000-2048-0.995" 
+run_dir = "/home/quy/Repos/2022_11_27/" + instance_type + "/DQN_" + arr_rate + "/"
 def get_ddqn_test_content(dir):
     _dir = dir + "/TEST"
     my_file = open(_dir, "r")
@@ -29,6 +29,9 @@ def get_ddqn_test_content(dir):
             epoch.append(float(item))
         if (len(epoch) >= 2):
             content_list.append(epoch)
+            if (content_list[-1][0] > 8e6):
+                break
+    content_list.pop(0)
     my_file.close()
     return content_list
 
@@ -70,10 +73,10 @@ arr_dict={0:'150', 1:'240', 2:'360'}
 instance_types={0:'uniform', 1:'cluster'}
 #rcParams['axes.titlepad'] = 20 
 #fig.suptitle(instance_type + ' location distribution', fontsize = 22)
-plt.subplots_adjust(left=0.05,
+plt.subplots_adjust(left=0.07,
                 bottom=0.1,
                 right=0.98,
-                top=0.85,
+                top=0.90,
                 wspace=0.3,
                 hspace=0.5)
 
@@ -81,9 +84,9 @@ for i in range(3):
     arr_rate = arr_dict[i]
     for j in range(2):
         instance_type = instance_types[j]
-        run_dir = instance_type + "-" + arr_rate + "-" + nb_nurse + "-" + obj + "-" + use_ch + "-20000000-512-0.999" 
-
-        content_list = get_ddqn_test_content(parent_dir + run_dir)
+        run_dir = instance_type + "-" + arr_rate + "-" + nb_nurse + "-" + obj + "-" + use_ch + "-15000000-2048-0.995" 
+        run_dir = parent_dir + "n" + arr_rate + "_" + instance_type + "_0.995_2x256/"
+        content_list = get_ddqn_test_content(run_dir)
         dh, ch, sba_dh, sba_ch = get_sba_result(dir=sba_dir + instance_type, nb_scen = '20')
         it = [i[0] for i in content_list]
         obj_ = [i[1] for i in content_list]
@@ -96,15 +99,15 @@ for i in range(3):
 
         ax[i][j].tick_params(axis='both', which='major', width=3, length= 15)
         ax[i][j].tick_params(axis='both', which='minor', width=3, length= 8)
-        ax[i][j].title.set_text("arrival rate = " + arr_rate)
+        ax[i][j].set_title("arrival rate = " + arr_rate, fontsize=18)
 
-        #plt.title('Avg gaps in log scale to reference solutions per iteration', pad=45, fontsize=26)
-plt.legend(loc='upper center', borderaxespad=0., bbox_to_anchor=(-0.2, 4.4), fontsize=15, ncol=5, fancybox=True)
+#plt.title('Avg gaps in log scale to reference solutions per iteration', pad=0, fontsize=26)
+plt.legend(loc='upper center', borderaxespad=0., bbox_to_anchor=(-0.2, 4.5), fontsize=16, ncol=5, fancybox=True)
 '''ax[0][0].set_ylabel('150',fontsize=18)
 ax[1][0].set_ylabel('240',fontsize=18)
 ax[2][0].set_ylabel('360',fontsize=18)'''
-ax[2][0].set_xlabel('Uniform',labelpad = 20, fontsize=19)
-ax[2][1].set_xlabel('Cluster',labelpad = 20, fontsize=19)
+ax[2][0].set_xlabel('Uniform',labelpad = 15, fontsize=21)
+ax[2][1].set_xlabel('Cluster',labelpad = 15, fontsize=21)
 
 plt.show()
-fig.savefig(instance_type + "_patient.jpg")
+fig.savefig("test_policy.jpg")

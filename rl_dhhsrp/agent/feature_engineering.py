@@ -7,7 +7,7 @@ class FeatureExtractor:
     def __init__(self, env, schedule):
         self.env = env
         self.schedule = schedule
-    def get_feature(self, request, current_time, min_cost_insertion, is_post_state = False, capacity_heur = False, valid = True, obj = "visit"):
+    def get_feature(self, request, current_time, min_cost_insertion, is_post_state = False, capacity_heur = False, valid = True, obj = "patient"):
         max_consider_week = self.env.max_required_week;
         total_time = ((self.env.working_tw[1] - self.env.working_tw[0]) * self.env.day_per_week * max_consider_week)
         working_hours = (self.env.working_tw[1] - self.env.working_tw[0])//60
@@ -16,12 +16,20 @@ class FeatureExtractor:
         total_travel_time = []
         future_visit = []
         next_nurses = [0] * self.env.nb_nurses
+        valids = [0] * self.env.nb_nurses
+        insert_cost = [0] * self.env.nb_nurses
+
         for nurse in range(0, self.env.nb_nurses):
             total_idle_time_avai.append(0)
             total_travel_time.append(0)
             future_visit.append(0)
-
             end_week = min(self.env.scheduling_horizon, current_time[0] + max_consider_week + 1)
+            if (valid == True and is_post_state == False):
+                (_valid, _min_cost_insertion) = self.schedule.check_feasible(request, current_time, spec_nurse = nurse, weekly_deadline = True, capacity_heur = capacity_heur)
+                if (_valid):
+                    valids[nurse] = 1
+                    insert_cost[nurse] = _min_cost_insertion[0][0]/ (80 * sqrt(2) * self.env.max_day_per_week * self.env.max_required_week)
+
             for week in range(current_time[0] + 1, end_week):
                 for day in range(0, self.env.day_per_week):
                     future_visit[nurse] = future_visit[nurse] + len(self.schedule.planned_routes[nurse][week][day].visit) - 2
@@ -40,29 +48,30 @@ class FeatureExtractor:
             total_idle_time_avai[nurse] = total_idle_time_avai[nurse] / (total_time)
             future_visit[nurse] = future_visit[nurse] / (self.env.day_per_week * self.env.max_required_week * working_hours)
         # Location & Eligibility
-        cheapest_insertion_cost = 0
-        if (capacity_heur == False):
-            cheapest_insertion_cost =  min_cost_insertion[0][0] / (80 * sqrt(2) * self.env.max_day_per_week * self.env.max_required_week)
-        else :
-            cheapest_insertion_cost =  min_cost_insertion[0][3] / (80 * sqrt(2) * self.env.max_day_per_week * self.env.max_required_week)
-        if (obj == 'visit'):
-            cheapest_insertion_cost = cheapest_insertion_cost / (request.require_time[0] * request.require_time[1])
+        cheapest_insertion_cost =  min_cost_insertion[0][0] / (80 * sqrt(2) * self.env.max_day_per_week * self.env.max_required_week)
+
         request_info = [request.require_time[0] / self.env.max_required_week, \
             request.require_time[1] / self.env.max_day_per_week, \
             request.require_time[2] / self.env.max_required_hour
         ]
-        next_nurses[min_cost_insertion[1]] = 1
+
+        next_nurses[min_cost_insertion[1]] = cheapest_insertion_cost
         if valid == False:
             cheapest_insertion_cost = 1
+            insert_cost = [0] * self.env.nb_nurses
+            valids = [0] * self.env.nb_nurses
         if (is_post_state):
             cheapest_insertion_cost = 0
             request_info = [0, 0, 0]
-            next_nurses[min_cost_insertion[1]] = 0
+            insert_cost = [0] * self.env.nb_nurses
+            valids = [0] * self.env.nb_nurses
             valid = False
-            
+
+        
         remaining_time = 1 - (current_time[1] * 24 * 60 + current_time[2])/(self.env.day_per_week * 24 * 60)
         
-        features = request_info + [cheapest_insertion_cost] + \
-            next_nurses + future_visit + [is_post_state] + [valid] +\
+        features = request_info + [remaining_time, is_post_state, valid] +\
+            insert_cost + valids + future_visit +\
             total_idle_time_avai + total_travel_time
+
         return np.reshape(features, [1, len(features)])

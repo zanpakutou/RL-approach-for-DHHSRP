@@ -60,8 +60,9 @@ class SBA:
                 insertions = [0] * len(requests)
                 for _request in requests:
                     (valid, min_cost_insertion) = schedulue.check_feasible(
-                        _request, current_time, weekly_deadline=True
+                        _request, current_time, weekly_deadline=True, capacity_heur = self.capacity_heur,
                     )
+                    
                     if valid == True:
                         heuristic = min_cost_insertion[0][0]
                         if (self.obj == "visit"):

@@ -86,7 +86,7 @@ def run_offline_DH(no: int):
     env.make(instance_dir + str(no) + ".in", instance_dir + "/../../context.in")
     sched = Schedule(env)
     requests = env.get_request()
-    ans_greedy = nb_visit = total_request = 0
+    ans_greedy = nb_patient = total_request = 0
 
     for week in range(env.nb_weeks):
         _requests = []
@@ -127,20 +127,20 @@ def run_offline_DH(no: int):
                     weekly_deadline=True,
                 )
                 ans_greedy = ans_greedy + reward(args.obj, _requests[best_index])
-                nb_visit = nb_visit + reward("visit", _requests[best_index])
+                nb_patient = nb_patient + 1
                 _requests.remove(_requests[best_index])
 
     print(
         "DH offline schedule \t" + str(ans_greedy) + " per " + str(total_request) + " requests"
     )
-    return sched.get_metrics() + [ans_greedy, ans_greedy / total_request, nb_visit]
+    return sched.get_metrics() + [ans_greedy, total_request, nb_patient]
 
 def run_DH_greedy(no: int):
     env = PatientRequest()
     env.make(instance_dir + str(no) + ".in", instance_dir + "/../../context.in")
     sched = Schedule(env)
     requests = env.get_request()
-    ans_greedy = nb_visit = total_request = 0
+    ans_greedy = nb_patient = total_request = 0
 
     for week in range(env.nb_weeks):
         for day in range(env.day_per_week):
@@ -152,15 +152,15 @@ def run_DH_greedy(no: int):
                 )
                 if valid == True:
                     ans_greedy = ans_greedy + reward(args.obj, request)
-                    nb_visit = nb_visit + reward("visit", request)
+                    nb_patient = nb_patient + 1
                     sched.accept_checked_request(
                         request, min_cost_insertion, weekly_deadline=True
                     )
 
     print(
-        "DH schedule \t" + str(ans_greedy) + ", " + str(nb_visit) + " per " + str(total_request) + " requests"
+        "DH schedule \t" + str(ans_greedy) + ", " + str(nb_patient) + " per " + str(total_request) + " requests"
     )
-    return sched.get_metrics() + [ans_greedy, ans_greedy / total_request, nb_visit]
+    return sched.get_metrics() + [ans_greedy, total_request, nb_patient]
 
 def run_CH_greedy(no: int):
     env = PatientRequest()
@@ -168,7 +168,7 @@ def run_CH_greedy(no: int):
 
     sched = Schedule(env)
     requests = env.get_request()
-    nb_visit = ans_greedy_cap = total_request = 0
+    nb_patient = ans_greedy_cap = total_request = 0
 
     for week in range(env.nb_weeks):
         for day in range(env.day_per_week):
@@ -180,7 +180,7 @@ def run_CH_greedy(no: int):
                 )
                 if valid == True:
                     ans_greedy_cap = ans_greedy_cap + reward(args.obj, request)
-                    nb_visit = nb_visit + reward("visit", request)
+                    nb_patient = nb_patient + 1
                     sched.accept_checked_request(
                         request, min_cost_insertion, weekly_deadline=True
                     )
@@ -192,7 +192,7 @@ def run_CH_greedy(no: int):
         + str(total_request)
         + " requests"
     )
-    return  sched.get_metrics() + [ans_greedy_cap, ans_greedy_cap / total_request, nb_visit]
+    return  sched.get_metrics() + [ans_greedy_cap, total_request, nb_patient]
 
 def run_SBA_greedy(
     no: int,
@@ -207,7 +207,7 @@ def run_SBA_greedy(
 
     scen_size = 5*(env.working_tw[1] - env.working_tw[0])/inter_arrival_rate
     sba = SBA(sched, PatientGenerator(mode=args.instance_type), capacity_heur=capacity_heur, num_scen=nb_scen, obj = args.obj, scen_size=int(scen_size * 5))
-    nb_visit = ans_sba = total_request = 0
+    nb_patient = ans_sba = total_request = 0
     decision_made = valid_req = decision_time = 0
 
     for week in range(env.nb_weeks):
@@ -228,7 +228,7 @@ def run_SBA_greedy(
                     if week <= 3:
                         action = [1]
                         ans_sba = ans_sba + reward(args.obj, request)
-                        nb_visit = nb_visit + reward("visit", request)
+                        nb_patient = nb_patient + 1
                         sched.accept_checked_request(
                             request,
                             min_cost_insertion,
@@ -247,7 +247,7 @@ def run_SBA_greedy(
                         continue
 
                     ans_sba = ans_sba + reward(args.obj, request)
-                    nb_visit = nb_visit + reward("visit", request)
+                    nb_patient = nb_patient + 1
                     sched.accept_request(
                         request, current_time, action[1], weekly_deadline=True, capacity_heur = capacity_heur
                     )
@@ -260,10 +260,10 @@ def run_SBA_greedy(
 
     return sched.get_metrics() + [
         ans_sba,
-        ans_sba / total_request,
+        total_request,
         decision_time / decision_made,
         valid_req,
-        nb_visit
+        nb_patient
     ]
 
 def run_stable_baselines(
@@ -280,7 +280,7 @@ def run_stable_baselines(
     requests = env.get_request()
     print(env.nb_weeks)
     feature_extractor = FeatureExtractor(env, sched)
-    nb_visit = ans_rl = total_request = valid_req = 0
+    nb_patient = ans_rl = total_request = valid_req = 0
     decision_time = decision_made = 0
     for week in range(env.nb_weeks):
         for day in range(env.day_per_week):
@@ -313,18 +313,21 @@ def run_stable_baselines(
                                 request, min_cost_insertion, weekly_deadline=True
                             )
                             ans_rl = ans_rl + reward(args.obj, request)
-                            nb_visit = nb_visit + reward("visit", request)
+                            nb_patient = nb_patient + 1
                         else:
                             print("invalid")
 
     print("RL schedule \t" + str(ans_rl) + " per " + str(total_request) + " requests")
-    return sched.get_metrics() + [ans_rl, ans_rl / total_request, decision_time/decision_made, valid_req, nb_visit]
+    return sched.get_metrics() + [ans_rl, total_request, decision_time/decision_made, valid_req, nb_patient]
 
 if __name__ == "__main__":
     os.makedirs(args.output_folder, exist_ok=True)
     print('output folder: ', args.output_folder)
+    parent_dir='/home/tusan/projects/def-roussea5/tusan/software/RL-approach-for-DHHSRP/rl_dhhsrp'
+    #parent_dir = "../../"
     instance_dir = (
-        "../../enviroment/instances/" 
+        parent_dir
+        + "/enviroment/instances/" 
         + str(args.nb_nurse) 
         + '_nurse/' 
         + args.instance_type 
@@ -345,7 +348,7 @@ if __name__ == "__main__":
             "sba_dh_sum_travel","sba_dh_avg_travel","sba_dh_dev_travel","sba_dh_sum_service","sba_dh_avg_service","sba_dh_dev_sercive","sba_dh_obj",\
             "sba_dh_rate","sba_dh_time","sba_dh_valid","sba_dh_visit","sba_ch_sum_travel","sba_ch_avg_travel","sba_ch_dev_travel","sba_ch_sum_service",\
             "sba_ch_avg_service","sba_ch_dev_service","sba_ch_obj","sba_ch_rate","sba_ch_time","sba_ch_valid","sba_ch_visit","rl_sum_travel","rl_avg_travel",\
-            "rl_dev_travel","rl_sum_service","rl_avg_service","rl_dev_service","rl_obj","rl_rate","rl_time","rl_valid","rl_visit"]
+            "rl_dev_travel","rl_sum_service","rl_avg_service","rl_dev_service","rl_obj","rl_rate","rl_time","rl_valid","rl_visit", "id"]
 
     with open(
         filename + ".csv", "w",

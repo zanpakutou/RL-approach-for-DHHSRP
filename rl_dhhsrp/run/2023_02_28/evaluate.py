@@ -323,14 +323,27 @@ def run_stable_baselines(
 if __name__ == "__main__":
     os.makedirs(args.output_folder, exist_ok=True)
     print('output folder: ', args.output_folder)
+
+        # temporary - for now - should pass instance file from the command line
+    parent_dir='/home/tusan/projects/def-roussea5/tusan/software/RL-approach-for-DHHSRP/rl_dhhsrp'
     instance_dir = (
-        "../../enviroment/instances/" 
+        parent_dir
+        + "/enviroment/instances/" 
         + str(args.nb_nurse) 
         + '_nurse/' 
         + args.instance_type 
         + '/' + str(args.arr_rate) 
         + '/'
     )
+    
+    # instance_dir = (
+    #     "../../enviroment/instances/" 
+    #     + str(args.nb_nurse) 
+    #     + '_nurse/' 
+    #     + args.instance_type 
+    #     + '/' + str(args.arr_rate) 
+    #     + '/'
+    # )
     print('instance dir: ', instance_dir)
 
     header = ["dho_sum_travel",	"dho_sum_service","dho_obj","dho_rate",	"dho_visit", "dh_sum_travel", "dh_sum_service",\
@@ -348,7 +361,7 @@ if __name__ == "__main__":
             "rl_dev_travel","rl_sum_service","rl_avg_service","rl_dev_service","rl_obj","rl_rate","rl_time","rl_valid","rl_visit"]
 
     with open(
-        filename + ".csv", "w",
+        filename + ".in", "w",
         newline="", encoding="utf-8",
     ) as f:
         write = csv.writer(f)

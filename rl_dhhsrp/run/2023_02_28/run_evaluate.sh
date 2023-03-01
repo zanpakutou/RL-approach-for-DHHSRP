@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --array=1-150
+#SBATCH --array=3-150
 #SBATCH --job-name=sba
 #SBATCH --time=168:00:00
 #SBATCH --cpus-per-task=1
-#SBATCH --mem-per-cpu=1G
-#SBATCH --account=def-roussea5
+#SBATCH --mem-per-cpu=2G
+#SBATCH --account=ctb-dionneg1
 #SBATCH --mail-user=phamtusan@gmail.com
 #SBATCH --mail-type=ALL
 #SBATCH --output=/home/tusan/projects/def-roussea5/tusan/software/RL-approach-for-DHHSRP/rl_dhhsrp/run/2023_02_28/log/%x_%a.out

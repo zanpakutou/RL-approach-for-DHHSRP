@@ -15,13 +15,12 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    "--instance_type", type=str, default='uniform',
-    choices=['uniform', 'cluster', 'full_cluster'],
+    "--instance_type", type=str, default='U',
+    choices=['U', 'C', 'UC'],
     help="Type of instances",
 )
 parser.add_argument(
-    "--arr_rate", type=int, default=360,
-    choices=[90, 150, 240, 360],
+    "--arr_rate", type=int, 
     help="Type of instances",
 )
 parser.add_argument(
@@ -33,7 +32,7 @@ parser.add_argument(
     help="Which folder to write logs and output, generate if not exist",
 )
 parser.add_argument(
-    "--timesteps", type=int, default=10000, help="Number of training timesteps"
+    "--timesteps", type=int, default=100000, help="Number of training timesteps"
 )
 parser.add_argument(
     "--batch_size", type=int, default=512, help="Number of sample for each NN updating",
@@ -59,8 +58,8 @@ parser.add_argument(
 parser.add_argument(
     "--nb_nurse",
     type=int,
-    default=6,
-    choices=[1, 6, 12],
+    default=1,
+    choices=[1, 3, 12, 24],
     help="Number of nurse",
 )
 parser.add_argument(
@@ -68,7 +67,7 @@ parser.add_argument(
     type=str,
     default='DQN',
     choices=['DQN', 'PPO'],
-    help="ALgorithm to be use",
+    help="Algorithm to be use",
 )
 
 args = parser.parse_args()
@@ -81,13 +80,13 @@ class CustomDQNPolicy(FeedForwardPolicy):
                                            layer_norm=False,
                                            feature_extraction="mlp")
 if __name__ == "__main__":
-    instance_folder = "../../enviroment/instances/" + args.instance_type + '/' + str(args.arr_rate) + '/'
+    instance_folder = "../../enviroment/instances/" + str(args.nb_nurse) + '_nurse/' + args.instance_type + '/' + str(args.arr_rate) + '/'
     seed = 0
-    log_dir = args.output_folder
+    log_dir = "23_02_20/" + str(args.instance_type) + "_" + str(args.arr_rate) + "_" + str(args.nb_nurse)#args.output_folder
     os.makedirs(log_dir, exist_ok=True)
 
     env = TimeLimit(
-        DHHSRP(instance_folder, reward_type=args.obj, cap_heur = args.cap_heur, nb_nurse = args.nb_nurse), max_episode_steps=5000
+        DHHSRP(instance_folder, reward_type=args.obj, cap_heur = args.cap_heur, nb_nurse = args.nb_nurse), max_episode_steps=3000
     )
     env = Monitor(env, log_dir)
     check_env(env, warn=True)
@@ -116,8 +115,8 @@ if __name__ == "__main__":
             gamma=args.discount_factor, seed=seed)
 
     # Callbacks
-    callback_train = SaveOnBestTrainingRewardCallback(check_freq=1e4, log_dir=log_dir, filename= args.alg + "_model")
-    callback_test = SaveTestCallback(check_freq=2e4, log_dir=log_dir, filename=args.alg + "_model", obj = args.obj, total_timesteps = args.timesteps, ex_frac=0.1, instance_dir=instance_folder, nb_nurse=args.nb_nurse)
+    callback_train = SaveOnBestTrainingRewardCallback(check_freq=1e5, log_dir=log_dir, filename= args.alg + "_model")
+    callback_test = SaveTestCallback(check_freq=2e5, log_dir=log_dir, filename=args.alg + "_model", obj = args.obj, total_timesteps = args.timesteps, ex_frac=0.1, instance_dir=instance_folder, nb_nurse=args.nb_nurse)
     # Train the agent
     model.learn(args.timesteps, log_interval=2e4, callback=[callback_train, callback_test])
     # Save the agent

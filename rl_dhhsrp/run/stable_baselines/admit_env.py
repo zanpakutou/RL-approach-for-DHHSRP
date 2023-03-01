@@ -125,7 +125,6 @@ class DHHSRP(gym.Env):
         return obs, reward, done, infor
 
     def render(self, mode='console'):
-        #agent is represented as a cross, rest as a dot
         print("->" , self.request_position, self.current_time, self.is_post_state)
 
     def close(self):

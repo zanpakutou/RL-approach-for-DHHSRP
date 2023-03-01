@@ -23,20 +23,18 @@ class DHHSRP(gym.Env):
     ACCEPT = 1
     REJECT = 0
 
-    def __init__(self, instance_dir = "../../enviroment/instances/uniform/150/", reward_type = 'patient', is_episodic=False, cap_heur = False, nb_nurse = 6):
+    def __init__(self, instance_dir = "../../enviroment/instances/uniform/150/", reward_type = 'patient', cap_heur = False, nb_nurse = 6):
         super(DHHSRP, self).__init__()
-        self.is_episodic = is_episodic
-        nb_weeks = 145
-        if (self.is_episodic):
-            nb_weeks = 22
-
+        nb_weeks = 1500
         
         self.instance_dir = instance_dir
         self.reward_type = reward_type
         self.cap_heur = cap_heur
         self.nb_nurse = nb_nurse
         self.env = PatientRequest()
-        self.env.make(self.instance_dir + str(0) + ".in", self.instance_dir + "/../../context_" + str(self.nb_nurse) + ".in", nb_weeks = nb_weeks)
+        print(self.instance_dir + str(0) + ".in")
+        self.env.make(self.instance_dir + str(0) + ".in", self.instance_dir + "/../../context.in", nb_weeks = nb_weeks)
+        
         self.action_space = spaces.Discrete(self.env.nb_nurses + 1)
         self.observation_space = spaces.Box(low=0, high=2,
                                                 shape=(1, 5 * self.env.nb_nurses + 6,), dtype=np.float64) #10 * self.env.nb_nurses + 6
@@ -62,12 +60,10 @@ class DHHSRP(gym.Env):
     def reset(self):
         instance_no = np.random.randint(900)
         self.env = PatientRequest()
-        nb_weeks = 145
-        if (self.is_episodic):
-            nb_weeks = 22
+        nb_weeks = 1500
             
-        self.env.make(self.instance_dir + str(instance_no) + ".in", self.instance_dir + "/../../context_" + str(self.nb_nurse) + ".in", nb_weeks = nb_weeks)
-        self.env.scheduling_horizon = 150
+        self.env.make(self.instance_dir + str(instance_no) + ".in", self.instance_dir + "/../../context.in", nb_weeks = nb_weeks)
+        self.env.scheduling_horizon = 1500
         self.sched = Schedule(self.env)
         self.requests = self.env.get_request()
         self.feature_extractor = FeatureExtractor(self.env, self.sched)
@@ -94,6 +90,7 @@ class DHHSRP(gym.Env):
         reward = 0
         done = False
         infor = {} 
+
         if (self.is_post_state == True):
             self.current_time, self.request_position, next_request = self.find_next_request(self.request_position) #???
             (valid, min_cost_insertion) = self.sched.check_feasible(next_request, self.current_time, weekly_deadline = True, capacity_heur = self.cap_heur)
@@ -118,13 +115,10 @@ class DHHSRP(gym.Env):
                         reward = request.require_time[0] * request.require_time[1]
                 else:
                     obs = self.feature_extractor.get_feature(request=request, current_time=self.current_time, min_cost_insertion=min_cost_insertion, is_post_state = True, capacity_heur = self.cap_heur, obj = self.reward_type);
-                    reward = -10
+                    reward = -100
             self.is_post_state = True
         
         week, day, index = self.current_time
-        if week >= self.env.nb_weeks -  3:
-            if (self.is_episodic):
-                done = True
 
         return obs, reward, done, infor
 

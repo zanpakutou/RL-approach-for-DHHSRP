@@ -16,12 +16,12 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "--instance_type", type=str, default='uniform',
-    choices=['uniform', 'cluster', 'full_cluster'],
+    choices=['U', 'C', 'UC'],
     help="Type of instances",
 )
 parser.add_argument(
     "--arr_rate", type=int, default=360,
-    choices=[90, 150, 240, 360],
+    choices=[360, 1080, 1800],
     help="Type of instances",
 )
 parser.add_argument(
@@ -60,7 +60,7 @@ parser.add_argument(
     "--nb_nurse",
     type=int,
     default=6,
-    choices=[1, 6, 12],
+    choices=[1, 3, 12],
     help="Number of nurse",
 )
 parser.add_argument(
@@ -68,7 +68,7 @@ parser.add_argument(
     type=str,
     default='DQN',
     choices=['DQN', 'PPO'],
-    help="ALgorithm to be use",
+    help="Algorithm to be use",
 )
 
 args = parser.parse_args()

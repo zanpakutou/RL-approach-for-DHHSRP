@@ -21,7 +21,7 @@ def reward(obj: str, request: Request):
 
 def run_stable_baselines(no: int, instance_dir,  model, obj, epsilon = 0, cap_heur = False, nb_nurse = 6):
     env = PatientRequest()
-    env.make(instance_dir + str(no) + ".in", instance_dir + "/../../context_" + str(nb_nurse) + ".in")
+    env.make(instance_dir + str(no) + ".in", instance_dir + "/../../context.in")
 
     sched = Schedule(env)
     requests = env.get_request()
@@ -88,7 +88,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         if self.n_calls % self.check_freq == 0:
             # Retrieve training reward
             x, y = ts2xy(load_results(self.log_dir), "timesteps")
-            if len(x) > 0:
+            if len(x) > 100:
                 # Mean training reward over the last 100 episodes
                 mean_reward = np.mean(y[-100:])
                 if self.verbose > 0:

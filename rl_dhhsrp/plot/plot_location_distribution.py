@@ -15,12 +15,12 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
 
 from gym.wrappers import TimeLimit
-from run.stable_baselines.DHHSRPEnvironment_nurse import DHHSRP
+from run.stable_baselines.assignment_env import DHHSRP
 import numpy as np
 
-instance_type = 'cluster'
-nb_nurse = '6'
-instance_dir = '../enviroment/instances/' + instance_type + '/150/'
+instance_type = 'C'
+nb_nurse = '3'
+instance_dir = '../enviroment/instances/' + nb_nurse + "_nurse/" + instance_type + '/340/'
 
 def is_cluster(i, j):
     check = False
@@ -28,18 +28,20 @@ def is_cluster(i, j):
     check = check or (i in range(52, 68) and j in range(64, 80))
     check = check or (i in range(43, 64) and j in range(27, 48))
     return check
+
 def run_stable_baselines(
     no: int,
-    model_path="/home/quy/Repos/RL_DHHSRP/rl_dhhsrp/run/stable_baselines/n150_"  + instance_type + "_0.995_2x256_1/DQN_model_best_model",
+    model_path,
     nb_nurse=nb_nurse
 ):
     config = Config()
     env_type = TimeLimit(DHHSRP(instance_dir, reward_type=0, nb_nurse= nb_nurse), max_episode_steps=2000)
+    print(instance_dir)
     model = DQN.load(model_path, env=env_type)
     env = PatientRequest()
-    env.make(instance_dir + str(no) + ".in", instance_dir + "/../../context_" + str(nb_nurse) + ".in")
+    env.make(instance_dir + str(no) + ".in", instance_dir + "/../../context.in")
     
-    location_count = [[0 for i in range(80)] for j in range(80)]
+    location_count = [[0 for i in range(60)] for j in range(60)]
     sched = Schedule(env)
     requests = env.get_request()
     feature_extractor = FeatureExtractor(env, sched)
@@ -83,16 +85,16 @@ def location_count_func(nb_nurse: int, model_path):
     in_cluster = 0
     out_cluster = 0 
     i = o = 0
-    for i in range(000, 999):
+    for it in range(000, 999):
         if (location_count is None):
-            location_count, i, o = np.array(run_stable_baselines(i, nb_nurse = nb_nurse, model_path=model_path))
+            location_count, i, o = np.array(run_stable_baselines(it, nb_nurse = nb_nurse, model_path=model_path))
         else:
-            x, i, o = np.array(run_stable_baselines(i, nb_nurse = nb_nurse, model_path=model_path))
+            x, i, o = np.array(run_stable_baselines(it, nb_nurse = nb_nurse, model_path=model_path))
             location_count = location_count + x
 
         in_cluster = in_cluster + i
         out_cluster = out_cluster + o
-        #print(i, o)
+        print(it)
     print(in_cluster, out_cluster)    
     return location_count
 
@@ -103,13 +105,17 @@ plt.subplots_adjust(left=0.01,
                 right=1,
                 top=0.98,)
 
-model_path="/home/quy/Repos/Experiments_result/Result_nurse_action/6_nurse/n150_" + instance_type + "_0.995_2x256/DQN_model_best_model"
+model_path="../run/stable_baselines/23_02_10/" + instance_type + "_340_3/DQN_model_best_model"
 im = axes.imshow(location_count_func(nb_nurse, model_path))
-circ = Circle((40, 40), 1.2, color = "coral")
+circ = Circle((10, 10), 1.2, color = "coral")
+axes.add_patch(circ)
+circ = Circle((30, 30), 1.2, color = "coral")
+axes.add_patch(circ)
+circ = Circle((40, 50), 1.2, color = "coral")
 axes.add_patch(circ)
 
 fig.colorbar(im, pad=0.05)
 
-#plt.savefig("location_distribution_" + instance_type + '_' + nb_nurse + ".jpg", pad_inches=0, dpi=1500)
-plt.savefig("test")
+plt.savefig("location_distribution_" + instance_type + '_' + nb_nurse + "2.jpg", pad_inches=0, dpi=1500)
+#plt.savefig("test")
 plt.show()

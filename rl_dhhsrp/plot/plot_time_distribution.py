@@ -14,23 +14,23 @@ from stable_baselines import DQN
 import matplotlib.pyplot as plt
 
 from gym.wrappers import TimeLimit
-from run.stable_baselines.DHHSRPEnvironment_nurse import DHHSRP
+from run.stable_baselines.assignment_env import DHHSRP
 import numpy as np
 
-instance_dir = '../enviroment/instances/uniform/150/'
+instance_dir = '../enviroment/instances/3_nurse/U/150/'
 nb_nurse = 6
 
 def run_stable_baselines(
     no: int,
-    model_path="/home/quy/Repos/Experiments_result/Result_nurse_action/6_nurse/n150_uniform_0.995_2x256/DQN_model_best_model",
+    model_path="../run/stable_baselines/23_02_10/U_150_3/DQN_model_best_model",
 ):
     config = Config()
     env_type = TimeLimit(DHHSRP(instance_dir, reward_type=0, nb_nurse= nb_nurse), max_episode_steps=2000)
     model = DQN.load(model_path, env=env_type)
     env = PatientRequest()
-    env.make(instance_dir + str(no) + ".in", instance_dir + "/../../context_" + str(nb_nurse) + ".in")
+    env.make(instance_dir + str(no) + ".in", instance_dir + "/../../context.in")
     
-    location_count = [[0 for i in range(80)] for j in range(80)]
+    location_count = [[0 for i in range(60)] for j in range(60)]
     sched = Schedule(env)
     requests = env.get_request()
     feature_extractor = FeatureExtractor(env, sched)
@@ -52,14 +52,15 @@ def run_stable_baselines(
                     )
 
                     action, _states = model.predict(state)
-
+                    
                     if action == 0 and week > 3:
                         _week, _day, _hour = state[0][0], state[0][1], state[0][2]
-                        
+                        _dis = []
                         for n in range(6):
-                            if state[0][12 + n]:
+                            if state[0][9 + n]:
                                 _dis.append(state[0][6 + n])
                         dis = sum(_dis)/len(_dis)
+                        dis = dis / (_week * _day)
                         reject.append([24 * _week * _day *_hour, dis * 1357.64501988])
                         continue
                     else:
@@ -70,10 +71,11 @@ def run_stable_baselines(
                             x, y = request.location
                             _dis = []
                             _week, _day, _hour = state[0][0], state[0][1], state[0][2]
-                            for n in range(6):
-                                if state[0][12 + n]:
+                            for n in range(3):
+                                if state[0][9 + n]:
                                     _dis.append(state[0][6 + n])
                             dis = sum(_dis)/len(_dis)
+                            dis = dis / (_week * _day)
                             accept.append([24 * _week * _day * _hour, dis * 1357.64501988])
                         if (valid):
                             sched.accept_checked_request(
@@ -81,6 +83,7 @@ def run_stable_baselines(
                             )
                         else:
                             print("invalid")
+    print(len(reject))
 
     return accept, reject 
 
@@ -89,7 +92,7 @@ location_count = None
 fig, ax = plt.subplots()
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
-plt.subplots_adjust(left=0.1,
+plt.subplots_adjust(left=0.12,
                 bottom=0.1,
                 right=0.95,
                 top=0.95,)
@@ -97,14 +100,16 @@ plt.subplots_adjust(left=0.1,
 accept = []
 reject = []
 
-for i in range(123, 124):
+for i in range(988, 989):
+    print(i)
     _accept, _reject = run_stable_baselines(i)
     accept = accept + _accept
     reject = reject + _reject
 
 accept = np.array(accept)
 reject = np.array(reject)
-
+reject
+#print(reject)
 #ax.set_yticklabels([])
 plt.scatter(accept[:,0], accept[:,1], c="red", marker="o", linewidth=1, label="accept")
 plt.scatter(reject[:,0], reject[:,1], c="blue", marker="x", linewidth=1, label="reject")

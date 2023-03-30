@@ -9,14 +9,15 @@
 #SBATCH --mail-type=ALL
 #SBATCH --output=/home/tusan/projects/def-roussea5/tusan/software/RL-approach-for-DHHSRP/rl_dhhsrp/run/2023_03_09/log/%x_%a.out
 
-parent_dir='/home/tusan/projects/def-roussea5/tusan/software/RL-approach-for-DHHSRP'
-#parent_dir="../../../"
+#parent_dir='/home/tusan/projects/def-roussea5/tusan/software/RL-approach-for-DHHSRP'
+parent_dir="../../../"
 source ${parent_dir}/.env3.7/bin/activate
 source_code="${parent_dir}/rl_dhhsrp/run/2023_03_09/evaluate.py"
 CURRENT_DIR="${parent_dir}/rl_dhhsrp/run/2023_03_09"
 output_folder="${CURRENT_DIR}/sba/"
 #mkdir $output_folder
 c=${SLURM_ARRAY_TASK_ID}
+c=1
 setting=$(sed -n "${c}p" listSettingSBA.txt)
 
 echo "Running DH, CH, SBA"

@@ -1,5 +1,5 @@
---obj visit --nb_scenario 75 --arr_rate 40 --instance_type U --nb_nurse 24 --output_folder sba/ --instance_id 950 --switch_CH 0
---obj visit --nb_scenario 75 --arr_rate 40 --instance_type U --nb_nurse 24 --output_folder sba/ --instance_id 950 --switch_CH 1
+--obj visit --nb_scenario 0 --arr_rate 40 --instance_type U --nb_nurse 24 --output_folder sba/ --instance_id 950 --switch_CH 0
+--obj visit --nb_scenario 1 --arr_rate 40 --instance_type U --nb_nurse 24 --output_folder sba/ --instance_id 950 --switch_CH 1
 --obj visit --nb_scenario 75 --arr_rate 40 --instance_type U --nb_nurse 24 --output_folder sba/ --instance_id 951 --switch_CH 0
 --obj visit --nb_scenario 75 --arr_rate 40 --instance_type U --nb_nurse 24 --output_folder sba/ --instance_id 951 --switch_CH 1
 --obj visit --nb_scenario 75 --arr_rate 40 --instance_type U --nb_nurse 24 --output_folder sba/ --instance_id 952 --switch_CH 0

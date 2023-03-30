@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import copy
 
+
 def reward(obj: str, request: Request):
     if obj == "visit":
         return request.require_time[0] * request.require_time[1]
@@ -19,9 +20,15 @@ def reward(obj: str, request: Request):
         return 1
     return None
 
-def run_stable_baselines(no: int, instance_dir,  model, obj, epsilon = 0, cap_heur = False, nb_nurse = 6):
+
+def run_stable_baselines(
+    no: int, instance_dir, model, obj, epsilon=0, cap_heur=False, nb_nurse=6
+):
     env = PatientRequest()
-    env.make(instance_dir + str(no) + ".in", instance_dir + "/../../context_" + str(nb_nurse) + ".in")
+    env.make(
+        instance_dir + str(no) + ".in",
+        instance_dir + "/../../context_" + str(nb_nurse) + ".in",
+    )
 
     sched = Schedule(env)
     requests = env.get_request()
@@ -33,13 +40,16 @@ def run_stable_baselines(no: int, instance_dir,  model, obj, epsilon = 0, cap_he
                 total_request = total_request + 1
                 current_time = (week, day, request.current_time)
                 (valid, min_cost_insertion) = sched.check_feasible(
-                    request, current_time, weekly_deadline=True, capacity_heur = cap_heur
+                    request, current_time, weekly_deadline=True, capacity_heur=cap_heur
                 )
                 if valid == True:
                     state = feature_extractor.get_feature(
-                        request, current_time, min_cost_insertion, capacity_heur = cap_heur
+                        request,
+                        current_time,
+                        min_cost_insertion,
+                        capacity_heur=cap_heur,
                     )
-                    if (np.random.random_sample() < epsilon):
+                    if np.random.random_sample() < epsilon:
                         action = np.random.randint(2)
                     else:
                         action, _states = model.predict(state)
@@ -48,11 +58,15 @@ def run_stable_baselines(no: int, instance_dir,  model, obj, epsilon = 0, cap_he
                         continue
                     else:
                         sched.accept_checked_request(
-                            request, min_cost_insertion, weekly_deadline=True, capacity_heur = cap_heur
+                            request,
+                            min_cost_insertion,
+                            weekly_deadline=True,
+                            capacity_heur=cap_heur,
                         )
                         ans_rl = ans_rl + reward(obj, request)
 
     return ans_rl
+
 
 def plot_results(log_folder, title="Learning Curve"):
     x, y = ts2xy(load_results(log_folder), "timesteps")
@@ -66,8 +80,9 @@ def plot_results(log_folder, title="Learning Curve"):
     plt.show()
     fig.savefig(log_folder + "/log.jpg")
 
+
 class SaveOnBestTrainingRewardCallback(BaseCallback):
-    def __init__(self, check_freq: int, log_dir: str, filename : str, verbose=1):
+    def __init__(self, check_freq: int, log_dir: str, filename: str, verbose=1):
         super(SaveOnBestTrainingRewardCallback, self).__init__(verbose)
         self.check_freq = check_freq
         self.log_dir = log_dir
@@ -100,8 +115,21 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
                     self.model.save(self.save_path)
         return True
 
+
 class SaveTestCallback(BaseCallback):
-    def __init__(self, check_freq: int, log_dir: str, instance_dir: str, filename : str, obj = 'patient', total_timesteps = 1e6, ex_frac = 0.1, cap_heur = False, verbose=1, nb_nurse = 6):
+    def __init__(
+        self,
+        check_freq: int,
+        log_dir: str,
+        instance_dir: str,
+        filename: str,
+        obj="patient",
+        total_timesteps=1e6,
+        ex_frac=0.1,
+        cap_heur=False,
+        verbose=1,
+        nb_nurse=6,
+    ):
         super(SaveTestCallback, self).__init__(verbose)
         self.check_freq = check_freq
         self.log_dir = log_dir
@@ -130,24 +158,37 @@ class SaveTestCallback(BaseCallback):
             test_res = 0
             test_epsilon = 0
             for no in test_pool:
-                ans = run_stable_baselines(no, instance_dir = self.instance_dir, model=self.model, obj=self.obj, cap_heur = self.cap_heur, nb_nurse=self.nb_nurse)
-                test_res  = test_res + ans
-                ans_epsilon = run_stable_baselines(no, instance_dir = self.instance_dir, model=self.model, epsilon=epsilon, obj=self.obj, cap_heur =self.cap_heur,nb_nurse=self.nb_nurse)
+                ans = run_stable_baselines(
+                    no,
+                    instance_dir=self.instance_dir,
+                    model=self.model,
+                    obj=self.obj,
+                    cap_heur=self.cap_heur,
+                    nb_nurse=self.nb_nurse,
+                )
+                test_res = test_res + ans
+                ans_epsilon = run_stable_baselines(
+                    no,
+                    instance_dir=self.instance_dir,
+                    model=self.model,
+                    epsilon=epsilon,
+                    obj=self.obj,
+                    cap_heur=self.cap_heur,
+                    nb_nurse=self.nb_nurse,
+                )
                 test_epsilon = test_epsilon + ans_epsilon
             test_res = test_res / len(test_pool)
-            test_epsilon = test_epsilon/len(test_pool)
-            
+            test_epsilon = test_epsilon / len(test_pool)
+
             if self.verbose > 0:
-                print(
-                    f"Test result: {test_res:.2f}"
-                )
-            logger = Logger(dir=self.log_dir, use=['test', 'eval'])
-            logger.write_test_log(episode=self.n_calls, score = test_res)
-            logger.write_eval_log(episode=self.n_calls, score = test_epsilon)
-            
+                print(f"Test result: {test_res:.2f}")
+            logger = Logger(dir=self.log_dir, use=["test", "eval"])
+            logger.write_test_log(episode=self.n_calls, score=test_res)
+            logger.write_eval_log(episode=self.n_calls, score=test_epsilon)
+
             # New best model, you could save the agent here
             if test_res > self.best_test_result:
                 self.best_test_result = test_res
-                self.model.save(self.save_path + '_' + format(test_res, '.1f'))
-                self.model.save(self.save_path + '_best_model')
+                self.model.save(self.save_path + "_" + format(test_res, ".1f"))
+                self.model.save(self.save_path + "_best_model")
             return True

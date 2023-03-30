@@ -137,7 +137,6 @@ for i_index, instance_type in enumerate(['uniform', 'cluster']):
             "q1": mean(rl_workload),
             "q3": mean(rl_workload),
             },
-            
         ]
         print(mean(dev_rl_workload), mean(dev_sba_ch_workload), mean(dev_sba_dh_workload), mean(dev_dh_workload))
         axes[i_index][a_index].bxp(stats,showfliers = False, showbox = False, medianprops=medianprops)

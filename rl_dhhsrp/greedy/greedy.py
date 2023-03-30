@@ -19,7 +19,15 @@ def most_frequent(List):
 
 
 class SBA:
-    def __init__(self, schedule, patient_generator, capacity_heur=False, obj = "patient",num_scen=15, scen_size=20):
+    def __init__(
+        self,
+        schedule,
+        patient_generator,
+        capacity_heur=False,
+        obj="patient",
+        num_scen=15,
+        scen_size=20,
+    ):
         self.sched = schedule
         self.pat_generator = patient_generator
         self.nb_scenarios = num_scen
@@ -33,7 +41,9 @@ class SBA:
         for scen in range(self.nb_scenarios):
             schedulue = deepcopy(self.sched)
             # Generate a scenario
+            request.current_time = current_time
             requests = [request]
+            c_week, c_day, c_hour = current_time
             for no in range(self.avg_request):
                 (
                     delay_time,
@@ -41,17 +51,26 @@ class SBA:
                     require_skill,
                     location,
                 ) = self.pat_generator.generate_patient()
-                requests.append(
-                    Request(
-                        current_time=current_time,
-                        require_time=require_time,
-                        require_skill=require_skill,
-                        location=location,
+                
+                while (c_hour < 990):
+                    c_hour = c_hour + int(delay_time)
+                    requests.append(
+                        Request(
+                            current_time=(c_week, c_day, c_hour),
+                            require_time=require_time,
+                            require_skill=require_skill,
+                            location=location,
+                        )
                     )
-                )
+                while (c_hour >= 990):
+                    c_hour = c_hour - 510
+                    c_day = c_day + 1
+                    if (c_day >= 5):
+                        c_day = 0
+                        c_week = c_week + 1
+
             # Cheapest insertion heuristic
             is_insertable = True
-            current_time = current_time
             while is_insertable:
                 min_cost = MAX_VAL
                 is_insertable = False
@@ -60,14 +79,21 @@ class SBA:
                 insertions = [0] * len(requests)
                 for _request in requests:
                     (valid, min_cost_insertion) = schedulue.check_feasible(
-                        _request, current_time, weekly_deadline=True, capacity_heur = self.capacity_heur,
+                        _request,
+                        _request.current_time,
+                        weekly_deadline=True,
+                        capacity_heur=self.capacity_heur,
                     )
-                    
+
                     if valid == True:
                         heuristic = min_cost_insertion[0][0]
-                        if (self.obj == "visit"):
-                                week, day, hour = _request.require_time[0], _request.require_time[1], _request.require_time[2]
-                                heuristic = heuristic / (week * day)
+                        if self.obj == "visit":
+                            week, day, hour = (
+                                _request.require_time[0],
+                                _request.require_time[1],
+                                _request.require_time[2],
+                            )
+                            heuristic = heuristic / (week * day)
                         if heuristic < min_cost:
                             min_cost = heuristic
                             best_index = index
@@ -84,7 +110,6 @@ class SBA:
                     schedulue.accept_checked_request(
                         requests[best_index],
                         insertions[best_index],
-                        current_time,
                         weekly_deadline=True,
                     )
                     requests.remove(requests[best_index])

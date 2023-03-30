@@ -6,14 +6,14 @@ from enviroment.patient_request import PatientRequest, Request
 from enviroment.schedule import Schedule
 from agent.feature_engineering import FeatureExtractor
 from agent.ddqn import DDQNAgent
-# from utils.utils import mean, stdev
+from utils.utils import MAX_VAL
 from greedy.greedy import SBA
 from enviroment.patient_generator import PatientGenerator
 from config.config import Config
 from stable_baselines import DQN
 
 from gym.wrappers import TimeLimit
-from run.stable_baselines.DHHSRPEnvironment_nurse import DHHSRP
+from run.stable_baselines.assignment_env import DHHSRP
 
 import csv
 import numpy as np
@@ -31,22 +31,20 @@ parser.add_argument(
 parser.add_argument(
     "--instance_type",
     type=str,
-    default="uniform",
-    choices=["uniform", "cluster", "simplify"],
+    default="U",
+    choices=["U", "C", "UC"],
     help="Which folder of customer request need to be run",
 )
 parser.add_argument(
     "--arr_rate",
     type=int,
-    default=360,
-    choices=[90, 150, 240, 360],
     help='Instance"s arrival rate',
 )
 parser.add_argument(
     "--nb_nurse",
     type=int,
-    default=6,
-    choices=[1, 6, 12],
+    default=3,
+    choices=[1, 3, 12, 24],
     help="Number of nurse",
 )
 parser.add_argument(
@@ -63,6 +61,7 @@ parser.add_argument(
     help="patient: maximize number of patient. visit: maximize number of visit",
 )
 
+
 args = parser.parse_args()
 filename = args.output_folder + "/result_"\
     + str(args.instance_type)\
@@ -71,31 +70,73 @@ filename = args.output_folder + "/result_"\
     + "_" + str(args.obj)\
     + "_" + str(args.nb_nurse)
 
-count_visit_DH = [0] * args.nb_nurse
-count_patient_DH = [0] * args.nb_nurse
-count_visit_CH = [0] * args.nb_nurse
-count_patient_CH = [0] * args.nb_nurse
-count_visit_SBA_DH = [0] * args.nb_nurse
-count_patient_SBA_DH = [0] * args.nb_nurse
-count_visit_SBA_CH = [0] * args.nb_nurse
-count_patient_SBA_CH = [0] * args.nb_nurse
-count_visit_rl = [0] * args.nb_nurse
-count_patient_rl = [0] * args.nb_nurse
-
 def reward(obj: str, request: Request):
-    if args.obj == "visit":
+    if obj == "visit":
         return request.require_time[0] * request.require_time[1]
-    elif args.obj == "patient":
+    elif obj == "patient":
         return 1
     return None
 
-def run_DH_greedy(no: int):
+def run_offline_DH(no: int):
     env = PatientRequest()
-    env.make(instance_dir + str(no) + ".in", instance_dir + "/../../context_" + str(args.nb_nurse) + ".in")
+    env.make(instance_dir + str(no) + ".in", instance_dir + "/../../context.in")
     sched = Schedule(env)
     requests = env.get_request()
-    ans_greedy = total_request = 0
-    acc_rate_dict = {'accept' : {}, 'total' : {}}
+    ans_greedy = nb_visit = total_request = 0
+
+    for week in range(env.nb_weeks):
+        _requests = []
+        for day in range(env.day_per_week):
+            for request in requests[week][day]:
+                total_request = total_request + 1
+                _requests.append(request)
+        is_insertable = True
+        current_time = (week, 0, 0)
+        while is_insertable:
+            min_cost = MAX_VAL
+            is_insertable = False
+            index = 0
+            best_index = -1
+            insertions = [0] * len(_requests)
+
+            for _request in _requests:
+                (valid, min_cost_insertion) = sched.check_feasible(
+                    _request, current_time, weekly_deadline=True )
+                
+                if valid == True:
+                    heuristic = min_cost_insertion[0][0] / reward(args.obj, _requests[best_index])
+                    if heuristic < min_cost:
+                        min_cost = heuristic
+                        best_index = index
+                    is_insertable = True
+
+                insertions[index] = min_cost_insertion
+                index = index + 1
+
+            if is_insertable:
+                if best_index < 0:
+                    print("??")
+                sched.accept_checked_request(
+                    _requests[best_index],
+                    insertions[best_index],
+                    current_time,
+                    weekly_deadline=True,
+                )
+                ans_greedy = ans_greedy + reward(args.obj, _requests[best_index])
+                nb_visit = nb_visit + reward("visit", _requests[best_index])
+                _requests.remove(_requests[best_index])
+
+    print(
+        "DH offline schedule \t" + str(ans_greedy) + " per " + str(total_request) + " requests"
+    )
+    return sched.get_metrics() + [ans_greedy, ans_greedy / total_request, nb_visit]
+
+def run_DH_greedy(no: int):
+    env = PatientRequest()
+    env.make(instance_dir + str(no) + ".in", instance_dir + "/../../context.in")
+    sched = Schedule(env)
+    requests = env.get_request()
+    ans_greedy = nb_visit = total_request = 0
 
     for week in range(env.nb_weeks):
         for day in range(env.day_per_week):
@@ -105,33 +146,25 @@ def run_DH_greedy(no: int):
                 (valid, min_cost_insertion) = sched.check_feasible(
                     request, current_time, weekly_deadline=True
                 )
-                if (request.require_time not in acc_rate_dict['total'].keys()):
-                    acc_rate_dict['total'][request.require_time] = 0
-                    acc_rate_dict['accept'][request.require_time]= 0
-
-                acc_rate_dict['total'][request.require_time] = acc_rate_dict['total'][request.require_time] + 1
                 if valid == True:
-                    acc_rate_dict['accept'][request.require_time] = acc_rate_dict['accept'][request.require_time] + 1 
                     ans_greedy = ans_greedy + reward(args.obj, request)
+                    nb_visit = nb_visit + reward("visit", request)
                     sched.accept_checked_request(
                         request, min_cost_insertion, weekly_deadline=True
                     )
-                    nb_visit = request.require_time[0] * request.require_time[1]
-                    count_visit_DH[min_cost_insertion[1]] = count_visit_DH[min_cost_insertion[1]] + nb_visit
-                    count_patient_DH[min_cost_insertion[1]] = count_patient_DH[min_cost_insertion[1]] + 1
+
     print(
-        "DH schedule \t" + str(ans_greedy) + " per " + str(total_request) + " requests"
+        "DH schedule \t" + str(ans_greedy) + ", " + str(nb_visit) + " per " + str(total_request) + " requests"
     )
-    return sched.get_metrics() + [ans_greedy, ans_greedy / total_request], acc_rate_dict
+    return sched.get_metrics() + [ans_greedy, ans_greedy / total_request, nb_visit]
 
 def run_CH_greedy(no: int):
     env = PatientRequest()
-    env.make(instance_dir + str(no) + ".in", instance_dir + "/../../context_" + str(args.nb_nurse) + ".in")
+    env.make(instance_dir + str(no) + ".in", instance_dir + "/../../context.in")
 
     sched = Schedule(env)
     requests = env.get_request()
-    ans_greedy_cap = total_request = 0
-    acc_rate_dict = {'accept' : {}, 'total' : {}}
+    nb_visit = ans_greedy_cap = total_request = 0
 
     for week in range(env.nb_weeks):
         for day in range(env.day_per_week):
@@ -141,19 +174,12 @@ def run_CH_greedy(no: int):
                 (valid, min_cost_insertion) = sched.check_feasible(
                     request, current_time, weekly_deadline=True, capacity_heur=True
                 )
-                if (request.require_time not in acc_rate_dict['total'].keys()):
-                    acc_rate_dict['total'][request.require_time] = 0
-                    acc_rate_dict['accept'][request.require_time]= 0
-                acc_rate_dict['total'][request.require_time] = acc_rate_dict['total'][request.require_time] + 1
                 if valid == True:
-                    acc_rate_dict['accept'][request.require_time] = acc_rate_dict['accept'][request.require_time] + 1 
                     ans_greedy_cap = ans_greedy_cap + reward(args.obj, request)
+                    nb_visit = nb_visit + reward("visit", request)
                     sched.accept_checked_request(
                         request, min_cost_insertion, weekly_deadline=True
                     )
-                    nb_visit = request.require_time[0] * request.require_time[1]
-                    count_visit_CH[min_cost_insertion[1]] = count_visit_CH[min_cost_insertion[1]] + nb_visit
-                    count_patient_CH[min_cost_insertion[1]] = count_patient_CH[min_cost_insertion[1]] + 1
 
     print(
         "CH schedule \t"
@@ -162,7 +188,7 @@ def run_CH_greedy(no: int):
         + str(total_request)
         + " requests"
     )
-    return  sched.get_metrics() + [ans_greedy_cap, ans_greedy_cap / total_request], acc_rate_dict
+    return  sched.get_metrics() + [ans_greedy_cap, ans_greedy_cap / total_request, nb_visit]
 
 def run_SBA_greedy(
     no: int,
@@ -171,16 +197,14 @@ def run_SBA_greedy(
     capacity_heur=False,
 ):
     env = PatientRequest()
-    env.make(instance_dir + str(no) + ".in", instance_dir + "/../../context_" + str(args.nb_nurse) + ".in")
+    env.make(instance_dir + str(no) + ".in", instance_dir + "/../../context.in")
     sched = Schedule(env)
     requests = env.get_request()
 
-    look_up_scensize = {90: 16, 150: 9, 240: 6, 360: 3}
-    scen_size = look_up_scensize[inter_arrival_rate]
-    sba = SBA(sched, PatientGenerator(mode=args.instance_type), capacity_heur=capacity_heur, num_scen=nb_scen, obj = args.obj, scen_size=scen_size * 5)
-    ans_sba = total_request = 0
+    scen_size = 5*(env.working_tw[1] - env.working_tw[0])/inter_arrival_rate
+    sba = SBA(sched, PatientGenerator(mode=args.instance_type), capacity_heur=capacity_heur, num_scen=nb_scen, obj = args.obj, scen_size=int(scen_size))
+    nb_visit = ans_sba = total_request = 0
     decision_made = valid_req = decision_time = 0
-    acc_rate_dict = {'accept' : {}, 'total' : {}}
 
     for week in range(env.nb_weeks):
         for day in range(env.day_per_week):
@@ -193,51 +217,37 @@ def run_SBA_greedy(
                     weekly_deadline=True,
                     capacity_heur=capacity_heur,
                 )
-                if (request.require_time not in acc_rate_dict['total'].keys()):
-                    acc_rate_dict['total'][request.require_time] = 0
-                    acc_rate_dict['accept'][request.require_time]= 0
-                acc_rate_dict['total'][request.require_time] = acc_rate_dict['total'][request.require_time] + 1
 
-                nb_visit = request.require_time[0] * request.require_time[1]
                 if valid == True:
                     action = [0]
+                    valid_req = valid_req + 1
                     if week <= 3:
                         action = [1]
                         ans_sba = ans_sba + reward(args.obj, request)
+                        nb_visit = nb_visit + reward("visit", request)
                         sched.accept_checked_request(
                             request,
                             min_cost_insertion,
                             weekly_deadline=True,
                             capacity_heur=capacity_heur,
                         )
-                        if (capacity_heur == False):
-                            count_visit_SBA_DH[min_cost_insertion[1]] = count_visit_SBA_DH[min_cost_insertion[1]] + nb_visit
-                            count_patient_SBA_DH[min_cost_insertion[1]] = count_patient_SBA_DH[min_cost_insertion[1]] + 1
-                        else:
-                            count_visit_SBA_CH[min_cost_insertion[1]] = count_visit_SBA_CH[min_cost_insertion[1]] + nb_visit
-                            count_patient_SBA_CH[min_cost_insertion[1]] = count_patient_SBA_CH[min_cost_insertion[1]] + 1
                         continue
                     else:
                         st = time.time()
                         action = sba.act(request, current_time)
                         decision_time = decision_time + time.time() - st
                         decision_made = decision_made + 1
-                    valid_req = valid_req + 1
+                    
                         
                     if action[0] == 0:
                         continue
-                    acc_rate_dict['accept'][request.require_time] = acc_rate_dict['accept'][request.require_time] + 1 
+
                     ans_sba = ans_sba + reward(args.obj, request)
+                    nb_visit = nb_visit + reward("visit", request)
                     sched.accept_request(
                         request, current_time, action[1], weekly_deadline=True, capacity_heur = capacity_heur
                     )
-                   
-                    if (capacity_heur == False):
-                        count_visit_SBA_DH[action[1]] = count_visit_SBA_DH[action[1]] + nb_visit
-                        count_patient_SBA_DH[action[1]] = count_patient_SBA_DH[action[1]] + 1
-                    else:
-                        count_visit_SBA_CH[action[1]] = count_visit_SBA_CH[action[1]] + nb_visit
-                        count_patient_SBA_CH[action[1]] = count_patient_SBA_CH[action[1]] + 1
+
     print(
         "SBA " + str(capacity_heur) + " schedule \t"
         + str(ans_sba) + " per " + str(total_request) + " requests"
@@ -249,22 +259,24 @@ def run_SBA_greedy(
         ans_sba / total_request,
         decision_time / decision_made,
         valid_req,
-    ], acc_rate_dict
+        nb_visit
+    ]
 
 def run_stable_baselines(
     no: int,
-    model_path="/home/quy/Repos/RL_DHHSRP/rl_dhhsrp/run/stable_baselines/n150_uniform_0.995_1x256/DQN_model_best_model",
+    model_path,
 ):
     config = Config()
     env_type = TimeLimit(DHHSRP(instance_dir, reward_type=0, nb_nurse = args.nb_nurse), max_episode_steps=5000)
     model = DQN.load(model_path, env=env_type)
     env = PatientRequest()
-    env.make(instance_dir + str(no) + ".in", instance_dir + "/../../context_" + str(args.nb_nurse) + ".in")
+    env.make(instance_dir + str(no) + ".in", instance_dir + "/../../context.in")
 
     sched = Schedule(env)
     requests = env.get_request()
+    print(env.nb_weeks)
     feature_extractor = FeatureExtractor(env, sched)
-    ans_rl = total_request = valid_req = 0
+    nb_visit = ans_rl = total_request = valid_req = 0
     decision_time = decision_made = 0
     for week in range(env.nb_weeks):
         for day in range(env.day_per_week):
@@ -279,10 +291,12 @@ def run_stable_baselines(
                         request, current_time, min_cost_insertion
                     )
                     st = time.time()
+                    print(state)
                     action, _states = model.predict(state)
                     decision_time = decision_time + time.time() - st
                     decision_made = decision_made + 1
                     valid_req = valid_req + 1
+                    
                     if action == 0 and week > 3:
                         continue
                     else:
@@ -296,74 +310,62 @@ def run_stable_baselines(
                                 request, min_cost_insertion, weekly_deadline=True
                             )
                             ans_rl = ans_rl + reward(args.obj, request)
-                            nb_visit = request.require_time[0] * request.require_time[1]
-                            count_visit_rl[min_cost_insertion[1]] = count_visit_rl[min_cost_insertion[1]] + nb_visit
-                            count_patient_rl[min_cost_insertion[1]] = count_patient_rl[min_cost_insertion[1]] + 1
+                            nb_visit = nb_visit + reward("visit", request)
                         else:
                             print("invalid")
 
     print("RL schedule \t" + str(ans_rl) + " per " + str(total_request) + " requests")
-    return sched.get_metrics() + [ans_rl, ans_rl / total_request, decision_time/decision_made, valid_req]
-
+    return sched.get_metrics() + [ans_rl, ans_rl / total_request, decision_time/decision_made, valid_req, nb_visit]
 
 if __name__ == "__main__":
     os.makedirs(args.output_folder, exist_ok=True)
     print('output folder: ', args.output_folder)
     instance_dir = (
-        "../../enviroment/instances/"
-        + args.instance_type
-        + "/"
-        + str(args.arr_rate)
-        + "/"
+        "../../enviroment/instances/" 
+        + str(args.nb_nurse) 
+        + '_nurse/' 
+        + args.instance_type 
+        + '/' + str(args.arr_rate) 
+        + '/'
     )
     print('instance dir: ', instance_dir)
 
-    g_DH_dict = {}
-    g_CH_dict = {}
-    g_SDH_dict = {}
-    g_SCH_dict = {}
+    header = ["dho_sum_travel",	"dho_sum_service","dho_obj","dho_rate",	"dho_visit", "dh_sum_travel", "dh_sum_service",\
+        	"dh_obj","dh_rate","dh_visit","ch_sum_travel","ch_sum_service","ch_obj","ch_rate","ch_visit","sba_dh_sum_travel",\
+            "sba_dh_sum_service","sba_dh_obj","sba_dh_rate","sba_dh_time","sba_dh_valid","sba_dh_visit","sba_ch_sum_travel",	
+            "sba_ch_sum_service","sba_ch_obj","sba_ch_rate","sba_ch_time","sba_ch_valid","sba_ch_visit","rl_sum_travel","rl_sum_service",\
+            "rl_obj","rl_rate","rl_time","rl_valid","rl_visit"]
+    if (args.nb_nurse > 1):
+        header = ["dho_sum_travel","dho_avg_travel","dho_dev_travel","dho_sum_service","dho_avg_service","dho_dev_service","dho_obj","dho_rate",\
+        	"dho_visit","dh_sum_travel","dh_avg_travel","dh_dev_travel","dh_sum_service","dh_avg_service","dh_dev_service","dh_obj","dh_rate","dh_visit",\
+            "ch_sum_travel","ch_avg_travel","ch_dev_travel","ch_sum_service","ch_avg_service","ch_dev_service","ch_obj","ch_rate","ch_visit",\
+            "sba_dh_sum_travel","sba_dh_avg_travel","sba_dh_dev_travel","sba_dh_sum_service","sba_dh_avg_service","sba_dh_dev_sercive","sba_dh_obj",\
+            "sba_dh_rate","sba_dh_time","sba_dh_valid","sba_dh_visit","sba_ch_sum_travel","sba_ch_avg_travel","sba_ch_dev_travel","sba_ch_sum_service",\
+            "sba_ch_avg_service","sba_ch_dev_service","sba_ch_obj","sba_ch_rate","sba_ch_time","sba_ch_valid","sba_ch_visit","rl_sum_travel","rl_avg_travel",\
+            "rl_dev_travel","rl_sum_service","rl_avg_service","rl_dev_service","rl_obj","rl_rate","rl_time","rl_valid","rl_visit"]
 
     with open(
-        filename + ".csv", "w",
+        filename + "_rev.csv", "w",
         newline="", encoding="utf-8",
     ) as f:
         write = csv.writer(f)
-        for no in range(993, 1000):
+        write.writerow(header)
+        for no in range(950, 980):
             print(no)
-            stat_DH, DH_dict = run_DH_greedy(no)
-            stat_CH, CH_dict = run_CH_greedy(no)
-            stat_SBA_DH, SDH_dict = run_SBA_greedy(
+            stat_DH_off = run_offline_DH(no)
+            stat_DH = run_DH_greedy(no)
+            stat_CH = run_CH_greedy(no)
+            stat_SBA_DH = run_SBA_greedy(
                 no, nb_scen=args.nb_scenario, inter_arrival_rate=args.arr_rate
             )
             
-            stat_SBA_CH, SCH_dict = run_SBA_greedy(
+            stat_SBA_CH = run_SBA_greedy(
                 no, nb_scen=args.nb_scenario,
                 inter_arrival_rate=args.arr_rate, capacity_heur=True,
             )
-            xxx = "/home/quy/Repos/Experiments_result/Result_nurse_action/"
-            yyy = str(args.nb_nurse) + "_nurse/n" + str(args.arr_rate) + "_" + args.instance_type + "_0.995_2x256/DQN_model_best_model"
+            xxx = "../stable_baselines/08_03_20/"
+            yyy = args.instance_type + '_' + str(args.arr_rate) + "_" + str(args.nb_nurse)+ "/DQN_model_best_model"
             stat_RL= run_stable_baselines(no, model_path=xxx + yyy)
-            write.writerow(stat_DH + stat_CH + stat_SBA_DH + stat_SBA_CH + stat_RL)
+            write.writerow(stat_DH_off + stat_DH + stat_CH + stat_SBA_DH + stat_SBA_CH + stat_RL + [no])
             f.flush()
             print("----------------------------------------")
-
-            g_DH_dict[no] = DH_dict
-            g_CH_dict[no] = CH_dict
-            g_SDH_dict[no] = SDH_dict
-            g_SCH_dict[no] = SCH_dict
-
-            np.save(filename + '_DH_.npy', g_DH_dict)
-            np.save(filename + '_CH_.npy', g_CH_dict)
-            np.save(filename + '_SBA_DH.npy', g_SDH_dict)
-            np.save(filename + '_SBA_CH.npy', g_SCH_dict)
-
-        print(count_patient_DH + count_visit_DH)
-        print(count_patient_CH + count_visit_CH)
-        print(count_patient_SBA_DH + count_visit_SBA_DH)
-        print(count_patient_SBA_CH + count_visit_SBA_CH)
-        print(count_patient_rl + count_visit_rl)
-
-    #g_DH_dict = np.load(filename + '_DH_.npy', allow_pickle='TRUE')
-    #g_CH_dict = np.load(filename + '_CH_.npy', allow_pickle='TRUE')
-    #g_SDH_dict = np.load(filename + '_SBA_DH.npy', allow_pickle='TRUE')
-    #_SCH_dict = np.load(filename + '_SBA_CH.npy', allow_pickle='TRUE')

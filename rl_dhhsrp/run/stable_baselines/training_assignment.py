@@ -82,7 +82,8 @@ class CustomDQNPolicy(FeedForwardPolicy):
 if __name__ == "__main__":
     instance_folder = "../../enviroment/instances/" + str(args.nb_nurse) + '_nurse/' + args.instance_type + '/' + str(args.arr_rate) + '/'
     seed = 0
-    log_dir = "23_02_20/" + str(args.instance_type) + "_" + str(args.arr_rate) + "_" + str(args.nb_nurse)#args.output_folder
+    log_dir = "30_03_20/" + str(args.obj) + "/" + str(args.instance_type) + "_" + str(args.arr_rate) + "_" + str(args.nb_nurse)
+
     os.makedirs(log_dir, exist_ok=True)
 
     env = TimeLimit(
@@ -99,24 +100,18 @@ if __name__ == "__main__":
             learning_rate=args.lr,
             gamma=args.discount_factor, seed=seed,
             learning_starts=0,
-            exploration_fraction=0.1,
+            exploration_fraction=0.15,
             exploration_initial_eps=1,
             exploration_final_eps=0.05,
             train_freq=50,
-            target_network_update_freq=5000,
+            target_network_update_freq=10000,
             batch_size=args.batch_size,
             policy_kwargs=dict(dueling=False)
         )
-    if (args.alg=='PPO'):
-        model = PPO2('MlpPolicy',
-            env, 
-            verbose=args.verbose,
-            learning_rate=args.lr,
-            gamma=args.discount_factor, seed=seed)
 
     # Callbacks
     callback_train = SaveOnBestTrainingRewardCallback(check_freq=1e5, log_dir=log_dir, filename= args.alg + "_model")
-    callback_test = SaveTestCallback(check_freq=2e5, log_dir=log_dir, filename=args.alg + "_model", obj = args.obj, total_timesteps = args.timesteps, ex_frac=0.1, instance_dir=instance_folder, nb_nurse=args.nb_nurse)
+    callback_test = SaveTestCallback(check_freq=2e5, log_dir=log_dir, filename=args.alg + "_model", obj = args.obj, total_timesteps = args.timesteps, ex_frac=0.15, instance_dir=instance_folder, nb_nurse=args.nb_nurse)
     # Train the agent
     model.learn(args.timesteps, log_interval=2e4, callback=[callback_train, callback_test])
     # Save the agent

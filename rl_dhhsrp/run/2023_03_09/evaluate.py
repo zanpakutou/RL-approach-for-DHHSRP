@@ -330,8 +330,8 @@ def run_stable_baselines(
 if __name__ == "__main__":
     os.makedirs(args.output_folder, exist_ok=True)
     print('output folder: ', args.output_folder)
-    parent_dir='/home/tusan/projects/def-roussea5/tusan/software/RL-approach-for-DHHSRP/rl_dhhsrp'
-    #parent_dir = "../../"
+    #parent_dir='/home/tusan/projects/def-roussea5/tusan/software/RL-approach-for-DHHSRP/rl_dhhsrp'
+    parent_dir = "../../"
     instance_dir = (
         parent_dir
         + "/enviroment/instances/" 

@@ -38,7 +38,7 @@ def run_stable_baselines(no: int, instance_dir,  model, obj, epsilon = 0, cap_he
                 )
                 if valid == True:
                     state = feature_extractor.get_feature(
-                        request, current_time, min_cost_insertion, capacity_heur = cap_heur
+                        request=request, current_time=current_time, capacity_heur = cap_heur
                     )
                     if (np.random.random_sample() < epsilon):
                         action = np.random.randint(nb_nurse + 1)
@@ -131,7 +131,7 @@ class SaveTestCallback(BaseCallback):
         epsilon = 1 + fraction * (0.05 - 1)
 
         if self.n_calls % self.check_freq == 0:
-            test_pool = [950, 951, 952, 953, 954]
+            test_pool = [950, 951, 952]
             test_res = 0
             test_epsilon = 0
             for no in test_pool:

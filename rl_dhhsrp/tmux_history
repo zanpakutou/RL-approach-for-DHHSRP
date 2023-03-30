@@ -1,0 +1,1 @@
+python training_assignment.py --instance_type U --arr_rate 100 --timesteps 40000000 --batch_size 1024 --discount_factor 0.997 --obj visit --alg DQN --nb_nurse 12

@@ -51,9 +51,15 @@ class SBA:
                     require_skill,
                     location,
                 ) = self.pat_generator.generate_patient()
-                
-                while (c_hour < 990):
-                    c_hour = c_hour + int(delay_time)
+                c_hour = c_hour + int(delay_time)
+        
+                while (c_hour >= 990):
+                    c_hour = c_hour - 510
+                    c_day = c_day + 1
+                    if (c_day >= 5):
+                        c_day = 0
+                        c_week = c_week + 1
+                if (c_hour < 990):
                     requests.append(
                         Request(
                             current_time=(c_week, c_day, c_hour),
@@ -62,12 +68,6 @@ class SBA:
                             location=location,
                         )
                     )
-                while (c_hour >= 990):
-                    c_hour = c_hour - 510
-                    c_day = c_day + 1
-                    if (c_day >= 5):
-                        c_day = 0
-                        c_week = c_week + 1
 
             # Cheapest insertion heuristic
             is_insertable = True

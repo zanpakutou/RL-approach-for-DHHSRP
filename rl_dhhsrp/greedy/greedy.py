@@ -94,6 +94,7 @@ class SBA:
                                 _request.require_time[2],
                             )
                             heuristic = heuristic / (week * day)
+
                         if heuristic < min_cost:
                             min_cost = heuristic
                             best_index = index

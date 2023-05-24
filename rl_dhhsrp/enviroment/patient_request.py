@@ -28,7 +28,7 @@ class PatientRequest:
         self.max_required_hour = 0.0
         self.requests = []
         
-    def make(self, patient_dir, context_dir, nb_weeks=20):
+    def make(self, patient_dir, context_dir, nb_weeks=10):
         """Read param for patients from 'patient_dir' and
             param for nurses from context_dir
         """

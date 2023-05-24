@@ -387,12 +387,17 @@ class Schedule:
             workload = 0
             for week in range(self.horizon):
                 for day in range(len(self.planned_routes[0][week])):
+                    t = 0
+                    w = 0
                     route = self.planned_routes[nurse][week][day]
                     for pos in range(1, len(route.visit)):
                         prev = route.visit[pos - 1]
                         curr = route.visit[pos]
                         travel_time = travel_time + distance(prev.pos, curr.pos)
                         workload = workload + curr.ed - curr.st
+                        t = t + distance(prev.pos, curr.pos)
+                        w = w + curr.ed - curr.st
+
             nurse_travel_time.append(travel_time)
             nurse_workload.append(workload)
         if self.nb_nurses <= 2:

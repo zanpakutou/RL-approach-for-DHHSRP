@@ -34,11 +34,11 @@ class PatientGenerator:
     def __init__(self, arrival_rate = 150, loc_gen = u_location_generator, mode=None):
         self.arrival_rate = arrival_rate;
         self.horizon = 360
-        self.min_week = 8
-        self.max_weeks = 8
+        self.min_week = 4
+        self.max_weeks = 4
         self.max_days = 3
-        self.min_hours = 4
-        self.max_hours = 4
+        self.min_hours = 2
+        self.max_hours = 2
         self.max_skill = 3
         self.max_location_coor = 60
         self.loc_gen = loc_gen
